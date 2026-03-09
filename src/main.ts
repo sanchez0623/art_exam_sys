@@ -1,7 +1,5 @@
 import { config as loadEnv } from 'dotenv';
 import { NestFactory } from '@nestjs/core';
-import { mkdirSync } from 'fs';
-import { join } from 'path';
 import { AppModule } from './app.module';
 
 loadEnv({ path: '.env.local', quiet: true });
@@ -12,9 +10,6 @@ function isAddressInUseError(error: unknown): error is NodeJS.ErrnoException {
 }
 
 async function bootstrap() {
-  // Ensure the SQLite data directory exists
-  mkdirSync(join(process.cwd(), 'data'), { recursive: true });
-
   const app = await NestFactory.create(AppModule);
   const host = process.env.HOST ?? '0.0.0.0';
   const preferredPort = Number(process.env.PORT ?? 3000);

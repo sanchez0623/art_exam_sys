@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "installCommand": "cd art-history && npm install",
+  "buildCommand": "cd art-history && npm run build",
+  "outputDirectory": "art-history/.next"
+}

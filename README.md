@@ -171,6 +171,8 @@ NOTION_SYNC_SECRET=your-random-secret
 
 详细文档请参阅 [art-history/README.md](art-history/README.md)。
 
+> 部署到 Vercel 时，请将项目根目录指向 [art-history](art-history)。不要部署仓库根目录下的 NestJS 服务。
+
 ---
 
 ## 📄 License
