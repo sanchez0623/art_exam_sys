@@ -4,6 +4,9 @@
 /build
 /tmp
 
+# SQLite database (runtime data)
+/data
+
 # Logs
 logs
 *.log

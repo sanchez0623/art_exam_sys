@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎨 艺术史自测系统</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <header class="header">
+    <div class="container">
+      <div class="header-inner">
+        <h1 class="logo">🎨 艺术史自测系统</h1>
+        <nav class="nav">
+          <button class="nav-btn active" data-page="home">🏠 首页</button>
+          <button class="nav-btn" data-page="quiz">📝 开始答题</button>
+          <button class="nav-btn" data-page="history">📊 答题记录</button>
+          <button class="nav-btn" data-page="questions">📚 题库浏览</button>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main class="main container">
+
+    <!-- HOME PAGE -->
+    <div id="page-home" class="page active">
+      <div class="hero">
+        <h2>欢迎使用艺术史自测系统</h2>
+        <p class="subtitle">题库来源于耶鲁大学、哈佛大学、考陶尔德艺术研究院、斯莱德美术学院等权威机构的艺术史课程考题，中文翻译版，附详细解析。</p>
+        <div class="stats-grid" id="stats-grid">
+          <div class="stat-card">
+            <div class="stat-num" id="stat-total-q">-</div>
+            <div class="stat-label">题库总题数</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="stat-sessions">-</div>
+            <div class="stat-label">累计答题场次</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="stat-answered">-</div>
+            <div class="stat-label">累计作答题数</div>
+          </div>
+          <div class="stat-card accent">
+            <div class="stat-num" id="stat-accuracy">-%</div>
+            <div class="stat-label">综合正确率</div>
+          </div>
+        </div>
+        <div class="hero-actions">
+          <button class="btn btn-primary btn-lg" id="btn-quick-start">⚡ 快速开始（10题随机）</button>
+          <button class="btn btn-secondary btn-lg" id="btn-custom-start">⚙️ 自定义出题</button>
+        </div>
+      </div>
+
+      <!-- Custom Quiz Modal -->
+      <div id="modal-custom" class="modal hidden">
+        <div class="modal-content">
+          <h3>⚙️ 自定义出题</h3>
+          <div class="form-group">
+            <label>题目数量：</label>
+            <input type="number" id="custom-count" value="10" min="1" max="50" class="input">
+          </div>
+          <div class="form-group">
+            <label>艺术时期：</label>
+            <select id="custom-period" class="input">
+              <option value="">全部时期</option>
+              <option value="ancient">古代艺术</option>
+              <option value="medieval">中世纪艺术</option>
+              <option value="renaissance">文艺复兴</option>
+              <option value="baroque">巴洛克/洛可可</option>
+              <option value="modern">现代艺术</option>
+              <option value="contemporary">当代艺术</option>
+              <option value="non_western">非西方艺术</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>难度级别：</label>
+            <select id="custom-difficulty" class="input">
+              <option value="">全部难度</option>
+              <option value="1">⭐ 入门</option>
+              <option value="2">⭐⭐ 中等</option>
+              <option value="3">⭐⭐⭐ 困难</option>
+            </select>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn-primary" id="btn-start-custom">开始答题</button>
+            <button class="btn btn-ghost" id="btn-cancel-custom">取消</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUIZ PAGE -->
+    <div id="page-quiz" class="page">
+      <div id="quiz-loading" class="loading-box hidden">
+        <div class="spinner"></div>
+        <p>正在出题中，请稍候…</p>
+      </div>
+
+      <div id="quiz-container" class="hidden">
+        <div class="quiz-header">
+          <div class="quiz-meta">
+            <span id="quiz-title">第 1 / 10 题</span>
+            <span id="quiz-period-tag" class="tag"></span>
+            <span id="quiz-diff-tag" class="tag tag-diff"></span>
+          </div>
+          <div class="quiz-progress-wrap">
+            <div class="progress-bar">
+              <div class="progress-fill" id="quiz-progress" style="width:0%"></div>
+            </div>
+            <span id="quiz-score">得分：0/0</span>
+          </div>
+        </div>
+
+        <div class="question-card">
+          <div class="question-source" id="q-source"></div>
+          <div class="question-text" id="q-text"></div>
+          <div class="options-list" id="q-options"></div>
+          <div class="answer-feedback hidden" id="q-feedback">
+            <div class="feedback-result" id="feedback-result"></div>
+            <div class="feedback-explanation" id="feedback-explanation"></div>
+          </div>
+        </div>
+
+        <div class="quiz-nav">
+          <button class="btn btn-ghost" id="btn-prev-q">◀ 上一题</button>
+          <button class="btn btn-primary" id="btn-next-q">下一题 ▶</button>
+          <button class="btn btn-danger hidden" id="btn-finish-quiz">🏁 结束考试</button>
+        </div>
+      </div>
+
+      <!-- Result Screen -->
+      <div id="quiz-result" class="hidden">
+        <div class="result-card">
+          <div class="result-emoji" id="result-emoji">🎉</div>
+          <h2>考试完成！</h2>
+          <div class="result-score">
+            <span id="result-correct">-</span>/<span id="result-total">-</span>
+          </div>
+          <div class="result-accuracy" id="result-accuracy">正确率：-</div>
+          <div class="result-breakdown" id="result-breakdown"></div>
+          <div class="result-actions">
+            <button class="btn btn-primary btn-lg" id="btn-review">📋 查看解析</button>
+            <button class="btn btn-secondary btn-lg" id="btn-new-quiz">🔄 再来一次</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY PAGE -->
+    <div id="page-history" class="page">
+      <div class="section-header">
+        <h2>📊 答题记录</h2>
+        <button class="btn btn-ghost btn-sm" id="btn-refresh-history">🔄 刷新</button>
+      </div>
+      <div id="history-list" class="history-list">
+        <p class="empty-state">暂无答题记录</p>
+      </div>
+      <div class="pagination" id="history-pagination"></div>
+    </div>
+
+    <!-- QUESTIONS PAGE -->
+    <div id="page-questions" class="page">
+      <div class="section-header">
+        <h2>📚 题库浏览</h2>
+        <div class="filter-bar">
+          <input type="text" id="q-search" class="input input-sm" placeholder="搜索题目关键词…">
+          <select id="q-filter-period" class="input input-sm">
+            <option value="">全部时期</option>
+            <option value="ancient">古代</option>
+            <option value="medieval">中世纪</option>
+            <option value="renaissance">文艺复兴</option>
+            <option value="baroque">巴洛克</option>
+            <option value="modern">现代</option>
+            <option value="contemporary">当代</option>
+            <option value="non_western">非西方</option>
+          </select>
+          <button class="btn btn-primary btn-sm" id="btn-q-search">🔍 搜索</button>
+        </div>
+      </div>
+      <div id="questions-list" class="questions-list">
+        <p class="empty-state">加载中…</p>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>🎨 艺术史自测系统 · 题库来源：耶鲁大学、哈佛大学、考陶尔德艺术研究院等权威机构 · 中文翻译版</p>
+      <p>⏰ 每日早上8:00自动出题，也可手动开始</p>
+    </div>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>
