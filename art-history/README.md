@@ -7,14 +7,9 @@
 ## 系统模块划分
 
 | 模块 | 说明 |
-|------|------|
-| Auth | 登录 / 注册（Supabase Auth） |
-| Artists | 艺术家 CRUD + 图片上传 + 标签 |
-| Artworks | 作品 CRUD + 图片上传 + 标签 + 关联艺术家/时期 |
 | Periods | 艺术时期管理 |
 | Tags | 标签管理（颜色支持） |
 | Notes | 个人笔记（可关联任意实体） |
-| Favorites | 收藏夹（艺术家 / 作品） |
 | Search | 全局搜索（跨所有实体） |
 | Notion Sync | 从 Notion 数据库同步专题文章 |
 
@@ -44,18 +39,10 @@ art-history/
 │   ├── layout.tsx
 │   └── page.tsx                        # 重定向到 /dashboard
 ├── actions/                            # Server Actions
-│   ├── auth.ts
-│   ├── artists.ts
-│   ├── artworks.ts
 │   ├── periods.ts
 │   ├── tags.ts
 │   ├── notes.ts
-│   └── favorites.ts
-├── components/
-│   ├── layout/Sidebar.tsx
-│   ├── layout/PageHeader.tsx
 │   ├── ui/TagBadge.tsx
-│   ├── ui/EmptyState.tsx
 │   ├── ui/ImageUpload.tsx
 │   ├── ui/SearchBar.tsx
 │   ├── ui/FavoriteButton.tsx
@@ -217,6 +204,25 @@ NOTION_SYNC_SECRET=your-random-secret
 - Supabase 服务端会话
 
 因此不适合部署到 GitHub Pages 这类纯静态托管平台。GitHub Actions 中保留的是构建校验，不再执行 GitHub Pages 发布。
+
+### Vercel 正确部署方式
+
+这是一个 monorepo。Vercel 必须部署 [art-history](art-history) 这个子项目，而不是仓库根目录。
+
+在 Vercel Dashboard 中请确认：
+
+- `Root Directory` = `art-history`
+- Framework Preset = `Next.js`
+
+如果构建日志里出现下面这类命令：
+
+```bash
+cd art-history && npm install
+```
+
+通常说明你仍在部署**仓库根目录**，而不是直接把 `art-history` 设为 Root Directory。
+
+正确情况下，Vercel 会直接在 `art-history` 目录执行安装和构建。
 
 ---
 
