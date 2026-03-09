@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { ArtPeriod, Question, QuestionType } from './question.entity';
+import { SupabaseService } from '../supabase/supabase.service';
 
 export class CreateQuestionDto {
   content: string;
@@ -18,47 +17,108 @@ export class CreateQuestionDto {
 
 @Injectable()
 export class QuestionsService {
-  constructor(
-    @InjectRepository(Question)
-    private readonly repo: Repository<Question>,
-  ) {}
+  private readonly tableName = 'exam_questions';
+
+  constructor(private readonly supabaseService: SupabaseService) {}
+
+  private mapQuestion(row: Record<string, unknown>): Question {
+    return {
+      id: Number(row.id),
+      content: String(row.content),
+      imageUrl: row.image_url ? String(row.image_url) : null,
+      options: Array.isArray(row.options)
+        ? row.options.map((option) => String(option))
+        : [],
+      answer: String(row.answer),
+      explanation: String(row.explanation),
+      type: (row.type as QuestionType) ?? QuestionType.SINGLE_CHOICE,
+      period: (row.period as ArtPeriod) ?? ArtPeriod.MODERN,
+      source: row.source ? String(row.source) : null,
+      difficulty: Number(row.difficulty ?? 1),
+      tags: row.tags ? String(row.tags) : null,
+      createdAt: new Date(String(row.created_at)),
+      updatedAt: new Date(String(row.updated_at)),
+    };
+  }
+
+  private toInsertPayload(dto: CreateQuestionDto) {
+    return {
+      content: dto.content,
+      image_url: dto.imageUrl ?? null,
+      options: dto.options,
+      answer: dto.answer,
+      explanation: dto.explanation,
+      type: dto.type ?? QuestionType.SINGLE_CHOICE,
+      period: dto.period ?? ArtPeriod.MODERN,
+      source: dto.source ?? null,
+      difficulty: dto.difficulty ?? 1,
+      tags: dto.tags ?? null,
+    };
+  }
 
   async findAll(filters?: {
     period?: ArtPeriod;
     difficulty?: number;
     search?: string;
   }): Promise<Question[]> {
-    const qb = this.repo.createQueryBuilder('q');
+    let query = this.supabaseService.client
+      .from(this.tableName)
+      .select('*')
+      .order('id', { ascending: true });
+
     if (filters?.period) {
-      qb.andWhere('q.period = :period', { period: filters.period });
+      query = query.eq('period', filters.period);
     }
     if (filters?.difficulty) {
-      qb.andWhere('q.difficulty = :diff', { diff: filters.difficulty });
+      query = query.eq('difficulty', filters.difficulty);
     }
     if (filters?.search) {
-      qb.andWhere('q.content LIKE :s', { s: `%${filters.search}%` });
+      query = query.ilike('content', `%${filters.search}%`);
     }
-    return qb.orderBy('q.id', 'ASC').getMany();
+
+    const { data, error } = await query;
+    this.supabaseService.throwIfError(error, this.tableName);
+    return (data ?? []).map((row) => this.mapQuestion(row));
   }
 
   async findOne(id: number): Promise<Question | null> {
-    return this.repo.findOneBy({ id });
+    const { data, error } = await this.supabaseService.client
+      .from(this.tableName)
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    this.supabaseService.throwIfError(error, this.tableName);
+    return data ? this.mapQuestion(data) : null;
   }
 
   async count(): Promise<number> {
-    return this.repo.count();
+    const { count, error } = await this.supabaseService.client
+      .from(this.tableName)
+      .select('*', { count: 'exact', head: true });
+
+    this.supabaseService.throwIfError(error, this.tableName);
+    return count ?? 0;
   }
 
   async create(dto: CreateQuestionDto): Promise<Question> {
-    const q = this.repo.create({
-      ...dto,
-      options: JSON.stringify(dto.options),
-    });
-    return this.repo.save(q);
+    const { data, error } = await this.supabaseService.client
+      .from(this.tableName)
+      .insert(this.toInsertPayload(dto))
+      .select('*')
+      .single();
+
+    this.supabaseService.throwIfError(error, this.tableName);
+    return this.mapQuestion(data);
   }
 
   async remove(id: number): Promise<void> {
-    await this.repo.delete(id);
+    const { error } = await this.supabaseService.client
+      .from(this.tableName)
+      .delete()
+      .eq('id', id);
+
+    this.supabaseService.throwIfError(error, this.tableName);
   }
 
   /** Pick `count` random questions, optionally filtered */
@@ -79,12 +139,51 @@ export class QuestionsService {
   async bulkUpsert(questions: CreateQuestionDto[]): Promise<number> {
     let count = 0;
     for (const dto of questions) {
-      const existing = await this.repo.findOneBy({ content: dto.content });
+      const { data: existing, error } = await this.supabaseService.client
+        .from(this.tableName)
+        .select('id')
+        .eq('content', dto.content)
+        .maybeSingle();
+
+      this.supabaseService.throwIfError(error, this.tableName);
       if (!existing) {
         await this.create(dto);
         count++;
       }
     }
     return count;
+  }
+
+  async findByContents(contents: string[]): Promise<Question[]> {
+    if (contents.length === 0) {
+      return [];
+    }
+
+    const results: Question[] = [];
+    const chunkSize = 5;
+
+    for (let index = 0; index < contents.length; index += chunkSize) {
+      const chunk = contents.slice(index, index + chunkSize);
+      const { data, error } = await this.supabaseService.client
+        .from(this.tableName)
+        .select('*')
+        .in('content', chunk);
+
+      this.supabaseService.throwIfError(error, this.tableName);
+      results.push(...(data ?? []).map((row) => this.mapQuestion(row)));
+    }
+
+    return results;
+  }
+
+  async getContentIdMap(): Promise<Map<string, number>> {
+    const { data, error } = await this.supabaseService.client
+      .from(this.tableName)
+      .select('id, content');
+
+    this.supabaseService.throwIfError(error, this.tableName);
+    return new Map(
+      (data ?? []).map((row) => [String(row.content), Number(row.id)]),
+    );
   }
 }

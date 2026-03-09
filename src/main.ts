@@ -1,7 +1,11 @@
+import { config as loadEnv } from 'dotenv';
 import { NestFactory } from '@nestjs/core';
 import { mkdirSync } from 'fs';
 import { join } from 'path';
 import { AppModule } from './app.module';
+
+loadEnv({ path: '.env.local', quiet: true });
+loadEnv({ quiet: true });
 
 function isAddressInUseError(error: unknown): error is NodeJS.ErrnoException {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 'EADDRINUSE';

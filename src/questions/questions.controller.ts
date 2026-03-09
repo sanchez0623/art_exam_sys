@@ -24,15 +24,11 @@ export class QuestionsController {
     @Query('difficulty') difficulty?: string,
     @Query('search') search?: string,
   ) {
-    const questions = await this.svc.findAll({
+    return this.svc.findAll({
       period,
       difficulty: difficulty ? parseInt(difficulty, 10) : undefined,
       search,
     });
-    return questions.map((q) => ({
-      ...q,
-      options: JSON.parse(q.options) as string[],
-    }));
   }
 
   @Get('count')
@@ -44,7 +40,7 @@ export class QuestionsController {
   async getOne(@Param('id', ParseIntPipe) id: number) {
     const q = await this.svc.findOne(id);
     if (!q) throw new NotFoundException();
-    return { ...q, options: JSON.parse(q.options) as string[] };
+    return q;
   }
 
   @Post()

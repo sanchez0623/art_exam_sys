@@ -1,13 +1,3 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
-import { QuizAnswer } from '../quiz/quiz-answer.entity';
-
 export enum QuestionType {
   SINGLE_CHOICE = 'single_choice',
   MULTIPLE_CHOICE = 'multiple_choice',
@@ -24,47 +14,30 @@ export enum ArtPeriod {
   NON_WESTERN = 'non_western',
 }
 
-@Entity('questions')
 export class Question {
-  @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
-  @Column({ type: 'text' })
-  content: string;
+  content!: string;
 
-  @Column({ type: 'text', nullable: true })
-  imageUrl: string;
+  imageUrl!: string | null;
 
-  @Column({ type: 'text' })
-  options: string; // JSON array of option strings
+  options!: string[];
 
-  @Column({ type: 'text' })
-  answer: string; // Correct option index(es), e.g. "0" or "0,2"
+  answer!: string;
 
-  @Column({ type: 'text' })
-  explanation: string;
+  explanation!: string;
 
-  @Column({ type: 'varchar', default: QuestionType.SINGLE_CHOICE })
-  type: QuestionType;
+  type!: QuestionType;
 
-  @Column({ type: 'varchar', default: ArtPeriod.MODERN })
-  period: ArtPeriod;
+  period!: ArtPeriod;
 
-  @Column({ type: 'varchar', nullable: true })
-  source: string; // e.g. "Yale University Art History Exam 2019"
+  source!: string | null;
 
-  @Column({ type: 'int', default: 1 })
-  difficulty: number; // 1=easy, 2=medium, 3=hard
+  difficulty!: number;
 
-  @Column({ type: 'varchar', nullable: true })
-  tags: string; // comma-separated tags
+  tags!: string | null;
 
-  @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
-  @UpdateDateColumn()
-  updatedAt: Date;
-
-  @OneToMany(() => QuizAnswer, (a) => a.question)
-  quizAnswers: QuizAnswer[];
+  updatedAt!: Date;
 }

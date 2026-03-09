@@ -1,36 +1,20 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
 import { Question } from '../questions/question.entity';
 import { QuizSession } from './quiz-session.entity';
 
-@Entity('quiz_answers')
 export class QuizAnswer {
-  @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
-  @ManyToOne(() => QuizSession, (s) => s.answers, { onDelete: 'CASCADE' })
-  session: QuizSession;
+  session?: QuizSession;
 
-  @Column()
-  sessionId: number;
+  sessionId!: number;
 
-  @ManyToOne(() => Question, (q) => q.quizAnswers, { onDelete: 'CASCADE' })
-  question: Question;
+  question?: Question;
 
-  @Column()
-  questionId: number;
+  questionId!: number;
 
-  @Column({ type: 'text', nullable: true })
-  userAnswer: string; // option index(es) chosen
+  userAnswer!: string | null;
 
-  @Column({ type: 'boolean', default: false })
-  isCorrect: boolean;
+  isCorrect!: boolean;
 
-  @CreateDateColumn()
-  answeredAt: Date;
+  answeredAt!: Date;
 }
