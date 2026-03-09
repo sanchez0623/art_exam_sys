@@ -205,6 +205,21 @@ NOTION_SYNC_SECRET=your-random-secret
 
 ---
 
+## 部署说明
+
+推荐部署到 Vercel。
+
+该项目使用了 Next.js App Router 的动态服务端能力，包括：
+
+- `middleware`
+- Server Actions
+- `app/api` Route Handlers
+- Supabase 服务端会话
+
+因此不适合部署到 GitHub Pages 这类纯静态托管平台。GitHub Actions 中保留的是构建校验，不再执行 GitHub Pages 发布。
+
+---
+
 ## Notion 同步
 
 触发同步（使用 NOTION_SYNC_SECRET 作为 Bearer token）：

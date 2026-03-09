@@ -16,16 +16,17 @@ async function bootstrap() {
   mkdirSync(join(process.cwd(), 'data'), { recursive: true });
 
   const app = await NestFactory.create(AppModule);
+  const host = process.env.HOST ?? '0.0.0.0';
   const preferredPort = Number(process.env.PORT ?? 3000);
   let port = preferredPort;
 
   try {
-    await app.listen(port);
+    await app.listen(port, host);
   } catch (error) {
     if (!process.env.PORT && isAddressInUseError(error)) {
       port = preferredPort + 1;
       console.warn(`⚠️ 端口 ${preferredPort} 已被占用，自动切换到 ${port}`);
-      await app.listen(port);
+      await app.listen(port, host);
     } else {
       throw error;
     }
