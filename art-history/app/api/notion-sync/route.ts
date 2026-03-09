@@ -9,9 +9,10 @@ import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoint
  *  Uses the service-role key so it can bypass RLS.
  */
 export async function POST(request: Request) {
-  // Simple secret-header guard so the endpoint is not publicly callable
+  // Guard: require a dedicated sync secret so the service-role key stays isolated
+  const syncSecret = process.env.NOTION_SYNC_SECRET;
   const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`) {
+  if (!syncSecret || authHeader !== `Bearer ${syncSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

@@ -200,17 +200,18 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 NOTION_API_KEY=secret_your_notion_integration_token
 NOTION_ARTICLES_DATABASE_ID=your-notion-database-id
+NOTION_SYNC_SECRET=your-random-secret
 ```
 
 ---
 
 ## Notion 同步
 
-触发同步（使用 service-role key 作为 Bearer token）：
+触发同步（使用 NOTION_SYNC_SECRET 作为 Bearer token）：
 
 ```bash
 curl -X POST https://your-app.vercel.app/api/notion-sync \
-  -H "Authorization: Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY"
+  -H "Authorization: Bearer YOUR_NOTION_SYNC_SECRET"
 ```
 
 也可以通过 Vercel Cron Jobs 定期触发。
