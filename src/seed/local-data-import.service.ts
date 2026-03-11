@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import Database from 'better-sqlite3';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { CreateQuestionDto, QuestionsService } from '../questions/questions.service';
@@ -61,12 +60,18 @@ export class LocalDataImportService {
   ) {}
 
   async importFromSqlite() {
+    if (process.env.NETLIFY === 'true' || typeof process.env.AWS_LAMBDA_FUNCTION_NAME === 'string') {
+      this.logger.log('ℹ️ Serverless 环境下跳过本地 SQLite 导入');
+      return { importedQuestions: 0, importedSessions: 0, importedAnswers: 0 };
+    }
+
     if (!existsSync(this.sqlitePath)) {
       this.logger.log('ℹ️ 未发现本地 SQLite 数据文件，跳过迁移导入');
       return { importedQuestions: 0, importedSessions: 0, importedAnswers: 0 };
     }
 
-    const db = new Database(this.sqlitePath, { readonly: true });
+    const BetterSqlite3 = eval('require')('better-sqlite3') as typeof import('better-sqlite3');
+    const db = new BetterSqlite3(this.sqlitePath, { readonly: true });
 
     try {
       const sqliteTables = db
