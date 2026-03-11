@@ -8,18 +8,27 @@ import { AppSchedulerModule } from './scheduler/scheduler.module';
 import { SeedModule } from './seed/seed.module';
 import { SupabaseModule } from './supabase/supabase.module';
 
+const isServerlessRuntime =
+  process.env.NETLIFY === 'true' ||
+  process.env.NETLIFY_LOCAL === 'true' ||
+  typeof process.env.AWS_LAMBDA_FUNCTION_NAME === 'string';
+
 @Module({
   imports: [
     SupabaseModule,
-    ScheduleModule.forRoot(),
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'public'),
-      serveRoot: '/',
-      exclude: ['/api/(.*)'],
-    }),
+    ...(!isServerlessRuntime ? [ScheduleModule.forRoot()] : []),
+    ...(!isServerlessRuntime
+      ? [
+          ServeStaticModule.forRoot({
+            rootPath: join(__dirname, '..', 'public'),
+            serveRoot: '/',
+            exclude: ['/api/(.*)'],
+          }),
+        ]
+      : []),
     QuestionsModule,
     QuizModule,
-    AppSchedulerModule,
+    ...(!isServerlessRuntime ? [AppSchedulerModule] : []),
     SeedModule,
   ],
 })

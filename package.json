@@ -21,6 +21,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@netlify/functions": "^4.2.6",
     "@supabase/supabase-js": "^2.57.4",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
@@ -33,6 +34,7 @@
     "node-cron": "^4.2.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "serverless-http": "^4.0.0",
     "typeorm": "^0.3.28"
   },
   "devDependencies": {
