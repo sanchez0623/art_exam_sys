@@ -33,6 +33,14 @@ export class Question {
 
   source!: string | null;
 
+  sourceSite!: string | null;
+
+  sourceUrl!: string | null;
+
+  sourcePublishedAt!: Date | null;
+
+  contentHash!: string;
+
   difficulty!: number;
 
   tags!: string | null;

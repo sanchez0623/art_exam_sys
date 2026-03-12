@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { QuestionSyncModule } from './question-sync/question-sync.module';
 import { QuestionsModule } from './questions/questions.module';
 import { QuizModule } from './quiz/quiz.module';
 import { AppSchedulerModule } from './scheduler/scheduler.module';
@@ -27,6 +28,7 @@ const isServerlessRuntime =
         ]
       : []),
     QuestionsModule,
+    QuestionSyncModule,
     QuizModule,
     ...(!isServerlessRuntime ? [AppSchedulerModule] : []),
     SeedModule,

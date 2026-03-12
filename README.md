@@ -17,9 +17,10 @@
 
 - 📚 **66 道题库** — 涵盖古代、中世纪、文艺复兴、巴洛克、现代、当代及非西方艺术
 - 🎯 **多题型支持** — 单选、多选、判断题
-- ⏰ **定时自动出题** — 每天早上 8:00 自动创建每日练习（10 题随机）
+- 🔄 **定时同步新题** — 每天早上 8:00 从外部网站同步最新 10 道题并自动去重
 - ⚙️ **自定义出题** — 按时期、难度、数量灵活筛选
 - 📊 **答题记录** — 历史成绩、正确率统计、随时回顾
+- 🧠 **智能练习池** — 只抽取“未做过 + 做错过但尚未做对”的题目
 - 📖 **题库浏览** — 可按时期/关键词搜索，展开查看解析
 - 🗄️ **本地 SQLite 数据库** — 零配置，直接运行
 
@@ -46,7 +47,7 @@ npm run start:dev
 
 启动后访问：[http://localhost:3000](http://localhost:3000)
 
-> **首次启动**会自动创建 SQLite 数据库并导入 66 道初始题目，无需任何额外配置。
+> **首次启动**会自动创建基础题库；若需每日同步外部新题，请参考下方“外部题源配置”。
 
 #### 生产运行
 
@@ -62,7 +63,8 @@ art_exam_sys/
 ├── src/
 │   ├── questions/         # 题库模块（增删查）
 │   ├── quiz/              # 考试模块（答题、计分、历史）
-│   ├── scheduler/         # 定时任务（每日8:00自动出题）
+│   ├── scheduler/         # 定时任务（每日8:00同步外部新题）
+│   ├── question-sync/     # 外部题源同步模块
 │   ├── seed/              # 初始题库数据（66 道题）
 │   └── app.module.ts      # 根模块
 ├── public/                # 前端静态文件
@@ -83,7 +85,8 @@ art_exam_sys/
 | GET | `/api/questions/:id` | 获取单道题目详情 |
 | POST | `/api/questions` | 新增题目 |
 | DELETE | `/api/questions/:id` | 删除题目 |
-| POST | `/api/quiz/start` | 开始一场考试（支持 `count`, `period`, `difficulty`）|
+| POST | `/api/questions/sync` | 手动触发外部题源同步（支持 `count`） |
+| POST | `/api/quiz/start` | 开始一场考试（优先抽取错题，其次新题；支持 `count`, `period`, `difficulty`）|
 | GET | `/api/quiz/sessions` | 历史考试记录（支持 `page`, `limit` 分页）|
 | GET | `/api/quiz/stats` | 统计数据 |
 | GET | `/api/quiz/:id` | 获取某场考试详情 |
@@ -98,6 +101,20 @@ art_exam_sys/
 - 哈佛大学（Harvard University）— 世界艺术史、印象派与现代主义
 - 考陶尔德艺术研究院（Courtauld Institute of Art，伦敦）— 各时期专题
 - 斯莱德美术学院（Slade School of Fine Art）— 艺术史笔试
+
+### 🔄 外部题源配置
+
+每日同步能力默认会读取以下任一配置：
+
+1. 环境变量 `EXAM_QUESTION_SOURCES_JSON`
+2. 项目根目录下的 `data/question-sync-sources.json`
+
+可直接参考 [data/question-sync-sources.example.json](data/question-sync-sources.example.json) 复制出正式配置。支持两类题源：
+
+- `html`：通过 CSS 选择器抓取网页题目
+- `json`：通过字段映射读取题目接口
+
+系统会基于题干标准化后的 `SHA-256` 哈希去重，避免重复入库。
 
 ### 🛠️ 技术栈
 

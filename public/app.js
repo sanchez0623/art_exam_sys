@@ -47,8 +47,8 @@ async function loadStats() {
       fetchJSON('/api/quiz/stats'),
     ]);
     document.getElementById('stat-total-q').textContent = count;
-    document.getElementById('stat-sessions').textContent = stats.totalSessions;
-    document.getElementById('stat-answered').textContent = stats.totalAnswered;
+    document.getElementById('stat-sessions').textContent = stats.availableQuestions;
+    document.getElementById('stat-answered').textContent = stats.retryQuestions;
     document.getElementById('stat-accuracy').textContent = stats.totalAnswered > 0
       ? `${stats.accuracy}%` : '-%';
   } catch (e) { console.error('loadStats error', e); }
@@ -125,7 +125,7 @@ function renderQuestion() {
   const answered = Object.keys(answers).length;
   const correct = Object.values(answers).filter(a => a.isCorrect).length;
   document.getElementById('quiz-progress').style.width = `${(answered / total) * 100}%`;
-  document.getElementById('quiz-score').textContent = `得分：${correct}/${answered}`;
+  document.getElementById('quiz-score').textContent = `已答：${answered}/${total} · 正确：${correct}`;
 
   // Source
   document.getElementById('q-source').textContent = q.source ? `📌 ${q.source}` : '';

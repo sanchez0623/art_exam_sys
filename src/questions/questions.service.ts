@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { createHash } from 'crypto';
 import { ArtPeriod, Question, QuestionType } from './question.entity';
 import { SupabaseService } from '../supabase/supabase.service';
 
@@ -10,6 +11,10 @@ export class CreateQuestionDto {
   type?: QuestionType;
   period?: ArtPeriod;
   source?: string;
+  sourceSite?: string;
+  sourceUrl?: string;
+  sourcePublishedAt?: string;
+  contentHash?: string;
   difficulty?: number;
   tags?: string;
   imageUrl?: string;
@@ -34,6 +39,12 @@ export class QuestionsService {
       type: (row.type as QuestionType) ?? QuestionType.SINGLE_CHOICE,
       period: (row.period as ArtPeriod) ?? ArtPeriod.MODERN,
       source: row.source ? String(row.source) : null,
+      sourceSite: row.source_site ? String(row.source_site) : null,
+      sourceUrl: row.source_url ? String(row.source_url) : null,
+      sourcePublishedAt: row.source_published_at
+        ? new Date(String(row.source_published_at))
+        : null,
+      contentHash: String(row.content_hash ?? this.buildContentHash(String(row.content))),
       difficulty: Number(row.difficulty ?? 1),
       tags: row.tags ? String(row.tags) : null,
       createdAt: new Date(String(row.created_at)),
@@ -41,16 +52,31 @@ export class QuestionsService {
     };
   }
 
+  private normalizeContent(content: string): string {
+    return content.replace(/\s+/g, ' ').trim();
+  }
+
+  buildContentHash(content: string): string {
+    return createHash('sha256')
+      .update(this.normalizeContent(content).toLowerCase())
+      .digest('hex');
+  }
+
   private toInsertPayload(dto: CreateQuestionDto) {
+    const normalizedContent = this.normalizeContent(dto.content);
     return {
-      content: dto.content,
+      content: normalizedContent,
       image_url: dto.imageUrl ?? null,
-      options: dto.options,
+      options: dto.options.map((option) => option.trim()),
       answer: dto.answer,
-      explanation: dto.explanation,
+      explanation: dto.explanation.trim(),
       type: dto.type ?? QuestionType.SINGLE_CHOICE,
       period: dto.period ?? ArtPeriod.MODERN,
       source: dto.source ?? null,
+      source_site: dto.sourceSite ?? dto.source ?? null,
+      source_url: dto.sourceUrl ?? null,
+      source_published_at: dto.sourcePublishedAt ?? null,
+      content_hash: dto.contentHash ?? this.buildContentHash(normalizedContent),
       difficulty: dto.difficulty ?? 1,
       tags: dto.tags ?? null,
     };
@@ -64,7 +90,8 @@ export class QuestionsService {
     let query = this.supabaseService.client
       .from(this.tableName)
       .select('*')
-      .order('id', { ascending: true });
+      .order('source_published_at', { ascending: false, nullsFirst: false })
+      .order('id', { ascending: false });
 
     if (filters?.period) {
       query = query.eq('period', filters.period);
@@ -137,21 +164,47 @@ export class QuestionsService {
 
   /** Bulk upsert – used by seed and future question-bank fetch */
   async bulkUpsert(questions: CreateQuestionDto[]): Promise<number> {
-    let count = 0;
-    for (const dto of questions) {
-      const { data: existing, error } = await this.supabaseService.client
-        .from(this.tableName)
-        .select('id')
-        .eq('content', dto.content)
-        .maybeSingle();
-
-      this.supabaseService.throwIfError(error, this.tableName);
-      if (!existing) {
-        await this.create(dto);
-        count++;
-      }
+    if (questions.length === 0) {
+      return 0;
     }
-    return count;
+
+    const normalizedQuestions = questions.map((dto) => ({
+      ...dto,
+      content: this.normalizeContent(dto.content),
+      contentHash: dto.contentHash ?? this.buildContentHash(dto.content),
+    }));
+    const uniqueQuestions = Array.from(
+      new Map(normalizedQuestions.map((dto) => [dto.contentHash!, dto])).values(),
+    );
+
+    const { data: existingRows, error: existingError } = await this.supabaseService.client
+      .from(this.tableName)
+      .select('content_hash')
+      .in(
+        'content_hash',
+        uniqueQuestions.map((dto) => dto.contentHash!),
+      );
+
+    this.supabaseService.throwIfError(existingError, this.tableName);
+
+    const existingHashes = new Set(
+      (existingRows ?? []).map((row) => String(row.content_hash)),
+    );
+    const payloads = uniqueQuestions
+      .filter((dto) => !existingHashes.has(dto.contentHash!))
+      .map((dto) => this.toInsertPayload(dto));
+
+    if (payloads.length === 0) {
+      return 0;
+    }
+
+    const { data, error } = await this.supabaseService.client
+      .from(this.tableName)
+      .insert(payloads)
+      .select('id');
+
+    this.supabaseService.throwIfError(error, this.tableName);
+    return data?.length ?? payloads.length;
   }
 
   async findByContents(contents: string[]): Promise<Question[]> {
@@ -185,5 +238,14 @@ export class QuestionsService {
     return new Map(
       (data ?? []).map((row) => [String(row.content), Number(row.id)]),
     );
+  }
+
+  async getContentHashSet(): Promise<Set<string>> {
+    const { data, error } = await this.supabaseService.client
+      .from(this.tableName)
+      .select('content_hash');
+
+    this.supabaseService.throwIfError(error, this.tableName);
+    return new Set((data ?? []).map((row) => String(row.content_hash)));
   }
 }

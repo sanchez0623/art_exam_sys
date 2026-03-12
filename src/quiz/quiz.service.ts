@@ -47,6 +47,81 @@ export class QuizService {
     };
   }
 
+  private shuffle<T>(items: T[]): T[] {
+    const copied = [...items];
+    for (let index = copied.length - 1; index > 0; index -= 1) {
+      const swapIndex = Math.floor(Math.random() * (index + 1));
+      [copied[index], copied[swapIndex]] = [copied[swapIndex], copied[index]];
+    }
+    return copied;
+  }
+
+  private async getQuestionAnswerSummary(questionIds: number[]) {
+    if (questionIds.length === 0) {
+      return new Map<number, { answered: boolean; hasCorrect: boolean; hasWrong: boolean }>();
+    }
+
+    const { data, error } = await this.supabaseService.client
+      .from(this.answerTableName)
+      .select('question_id, is_correct')
+      .in('question_id', questionIds);
+
+    this.supabaseService.throwIfError(error, this.answerTableName);
+
+    const summary = new Map<
+      number,
+      { answered: boolean; hasCorrect: boolean; hasWrong: boolean }
+    >();
+
+    for (const row of data ?? []) {
+      const questionId = Number(row.question_id);
+      const current = summary.get(questionId) ?? {
+        answered: false,
+        hasCorrect: false,
+        hasWrong: false,
+      };
+
+      current.answered = true;
+      if (Boolean(row.is_correct)) {
+        current.hasCorrect = true;
+      } else {
+        current.hasWrong = true;
+      }
+      summary.set(questionId, current);
+    }
+
+    return summary;
+  }
+
+  private async getPracticeQuestionPools(filters?: {
+    period?: ArtPeriod;
+    difficulty?: number;
+  }) {
+    const allQuestions = await this.questionsService.findAll(filters);
+    const answerSummary = await this.getQuestionAnswerSummary(
+      allQuestions.map((question) => question.id),
+    );
+
+    const retryQuestions = allQuestions.filter((question) => {
+      const summary = answerSummary.get(question.id);
+      return Boolean(summary?.answered && !summary.hasCorrect);
+    });
+
+    const freshQuestions = allQuestions.filter(
+      (question) => !answerSummary.get(question.id)?.answered,
+    );
+
+    const masteredQuestions = allQuestions.filter(
+      (question) => Boolean(answerSummary.get(question.id)?.hasCorrect),
+    );
+
+    return {
+      retryQuestions,
+      freshQuestions,
+      masteredQuestions,
+    };
+  }
+
   /** Start a new quiz session */
   async startSession(options?: {
     count?: number;
@@ -55,13 +130,22 @@ export class QuizService {
     isScheduled?: boolean;
   }): Promise<QuizSession> {
     const count = options?.count ?? 10;
-    const questions = await this.questionsService.getRandom(count, {
+    const { retryQuestions, freshQuestions } = await this.getPracticeQuestionPools({
       period: options?.period,
       difficulty: options?.difficulty,
     });
+
+    const questions = [
+      ...this.shuffle(retryQuestions),
+      ...this.shuffle(freshQuestions),
+    ].slice(0, count);
+
     if (questions.length === 0) {
-      throw new BadRequestException('题库中暂无符合条件的题目');
+      throw new BadRequestException(
+        '当前没有可练习的新题或错题，请等待每日同步新题，或调整筛选条件。',
+      );
     }
+
     const { data, error } = await this.supabaseService.client
       .from(this.sessionTableName)
       .insert({
@@ -262,7 +346,12 @@ export class QuizService {
 
   /** Get stats summary */
   async getStats() {
-    const [{ count: totalSessions, error: totalSessionsError }, { count: completedSessions, error: completedSessionsError }, { data: allAnswers, error: answersError }] = await Promise.all([
+    const [
+      { count: totalSessions, error: totalSessionsError },
+      { count: completedSessions, error: completedSessionsError },
+      { data: allAnswers, error: answersError },
+      practicePools,
+    ] = await Promise.all([
       this.supabaseService.client
         .from(this.sessionTableName)
         .select('*', { count: 'exact', head: true }),
@@ -273,6 +362,7 @@ export class QuizService {
       this.supabaseService.client
         .from(this.answerTableName)
         .select('is_correct'),
+      this.getPracticeQuestionPools(),
     ]);
 
     this.supabaseService.throwIfError(totalSessionsError, this.sessionTableName);
@@ -291,12 +381,18 @@ export class QuizService {
     const totalCorrect = mappedAnswers.filter((a) => a.isCorrect).length;
     const accuracy =
       totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+
     return {
       totalSessions: totalSessions ?? 0,
       completedSessions: completedSessions ?? 0,
       totalAnswered,
       totalCorrect,
       accuracy,
+      availableQuestions:
+        practicePools.retryQuestions.length + practicePools.freshQuestions.length,
+      retryQuestions: practicePools.retryQuestions.length,
+      newQuestions: practicePools.freshQuestions.length,
+      masteredQuestions: practicePools.masteredQuestions.length,
     };
   }
 }

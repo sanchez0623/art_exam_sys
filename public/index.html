@@ -28,7 +28,7 @@
     <div id="page-home" class="page active">
       <div class="hero">
         <h2>欢迎使用艺术史自测系统</h2>
-        <p class="subtitle">题库来源于耶鲁大学、哈佛大学、考陶尔德艺术研究院、斯莱德美术学院等权威机构的艺术史课程考题，中文翻译版，附详细解析。</p>
+        <p class="subtitle">系统会每日从外部题源同步最新题目；练习时优先抽取错题和未做过的新题，做对后不再重复。</p>
         <div class="stats-grid" id="stats-grid">
           <div class="stat-card">
             <div class="stat-num" id="stat-total-q">-</div>
@@ -36,11 +36,11 @@
           </div>
           <div class="stat-card">
             <div class="stat-num" id="stat-sessions">-</div>
-            <div class="stat-label">累计答题场次</div>
+            <div class="stat-label">当前待练习题数</div>
           </div>
           <div class="stat-card">
             <div class="stat-num" id="stat-answered">-</div>
-            <div class="stat-label">累计作答题数</div>
+            <div class="stat-label">待复习错题数</div>
           </div>
           <div class="stat-card accent">
             <div class="stat-num" id="stat-accuracy">-%</div>
@@ -48,8 +48,8 @@
           </div>
         </div>
         <div class="hero-actions">
-          <button class="btn btn-primary btn-lg" id="btn-quick-start">⚡ 快速开始（10题随机）</button>
-          <button class="btn btn-secondary btn-lg" id="btn-custom-start">⚙️ 自定义出题</button>
+          <button class="btn btn-primary btn-lg" id="btn-quick-start">⚡ 开始练习（优先错题 + 新题）</button>
+          <button class="btn btn-secondary btn-lg" id="btn-custom-start">⚙️ 自定义练习</button>
         </div>
       </div>
 
@@ -189,7 +189,7 @@
   <footer class="footer">
     <div class="container">
       <p>🎨 艺术史自测系统 · 题库来源：耶鲁大学、哈佛大学、考陶尔德艺术研究院等权威机构 · 中文翻译版</p>
-      <p>⏰ 每日早上8:00自动出题，也可手动开始</p>
+      <p>⏰ 每日早上 8:00 自动同步最新 10 道题；做对后不再重复，错题会继续进入练习池</p>
     </div>
   </footer>
 
