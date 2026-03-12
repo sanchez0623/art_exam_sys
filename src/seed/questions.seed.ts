@@ -1,11 +1,58 @@
 import { ArtPeriod, QuestionType } from '../questions/question.entity';
 import { CreateQuestionDto } from '../questions/questions.service';
 
+type AuthoritativeSource = {
+  institution: string;
+  sourceSite: string;
+  sourceUrl: string;
+};
+
+export const AUTHORITATIVE_SOURCES: ReadonlyArray<AuthoritativeSource> = [
+  {
+    institution: '耶鲁大学',
+    sourceSite: '耶鲁大学 Yale University',
+    sourceUrl: 'https://arthistory.yale.edu/',
+  },
+  {
+    institution: '哈佛大学',
+    sourceSite: '哈佛大学 Harvard University',
+    sourceUrl: 'https://arthistory.fas.harvard.edu/',
+  },
+  {
+    institution: '考陶尔德艺术研究院',
+    sourceSite: '考陶尔德艺术研究院 Courtauld Institute of Art',
+    sourceUrl: 'https://courtauld.ac.uk/',
+  },
+  {
+    institution: '斯莱德美术学院',
+    sourceSite: '斯莱德美术学院 Slade School of Fine Art, UCL',
+    sourceUrl: 'https://www.ucl.ac.uk/slade/',
+  },
+] as const;
+
+function attachAuthoritativeSourceMetadata(
+  question: CreateQuestionDto,
+): CreateQuestionDto {
+  const matchedSource = AUTHORITATIVE_SOURCES.find(({ institution }) =>
+    question.source?.includes(institution),
+  );
+
+  if (!matchedSource) {
+    return question;
+  }
+
+  return {
+    ...question,
+    sourceSite: question.sourceSite ?? matchedSource.sourceSite,
+    sourceUrl: question.sourceUrl ?? matchedSource.sourceUrl,
+  };
+}
+
 /**
  * 艺术史题库 — 改编自耶鲁大学、哈佛大学、考陶尔德艺术研究院、
  * 斯莱德美术学院等权威机构的艺术史课程考题，已翻译为中文并附答案解析。
  */
-export const SEED_QUESTIONS: CreateQuestionDto[] = [
+const BASE_SEED_QUESTIONS: CreateQuestionDto[] = [
   // ─────────────── 古代艺术 ───────────────
   {
     content: '古希腊雕塑《米洛的维纳斯》（Aphrodite of Milos）创作于哪个时期？',
@@ -1150,3 +1197,7 @@ export const SEED_QUESTIONS: CreateQuestionDto[] = [
     tags: '文艺复兴,湿壁画,绘画技法',
   },
 ];
+
+export const SEED_QUESTIONS: CreateQuestionDto[] = BASE_SEED_QUESTIONS.map(
+  attachAuthoritativeSourceMetadata,
+);
