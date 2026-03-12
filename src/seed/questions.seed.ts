@@ -30,12 +30,23 @@ export const AUTHORITATIVE_SOURCES: ReadonlyArray<AuthoritativeSource> = [
   },
 ] as const;
 
+function normalizeSourceLabel(source?: string): string {
+  return source?.trim() ?? '';
+}
+
+export function findAuthoritativeSource(
+  source?: string,
+): AuthoritativeSource | undefined {
+  const normalizedSource = normalizeSourceLabel(source);
+  return AUTHORITATIVE_SOURCES.find(({ institution }) =>
+    normalizedSource.startsWith(institution),
+  );
+}
+
 export function attachAuthoritativeSourceMetadata(
   question: CreateQuestionDto,
 ): CreateQuestionDto {
-  const matchedSource = AUTHORITATIVE_SOURCES.find(({ institution }) =>
-    question.source?.includes(institution),
-  );
+  const matchedSource = findAuthoritativeSource(question.source);
 
   if (!matchedSource) {
     return question;

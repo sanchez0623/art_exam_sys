@@ -2,6 +2,7 @@ import {
   AUTHORITATIVE_SOURCES,
   SEED_QUESTIONS,
   attachAuthoritativeSourceMetadata,
+  findAuthoritativeSource,
 } from './questions.seed';
 
 describe('SEED_QUESTIONS authoritative sources', () => {
@@ -9,9 +10,7 @@ describe('SEED_QUESTIONS authoritative sources', () => {
     const coveredInstitutions = new Set<string>();
 
     for (const question of SEED_QUESTIONS) {
-      const authority = AUTHORITATIVE_SOURCES.find(({ institution }) =>
-        question.source?.includes(institution),
-      );
+      const authority = findAuthoritativeSource(question.source);
 
       expect(authority).toBeDefined();
       expect(question.sourceSite).toBe(authority?.sourceSite);
@@ -21,12 +20,9 @@ describe('SEED_QUESTIONS authoritative sources', () => {
       coveredInstitutions.add(authority!.institution);
     }
 
-    for (const institution of [
-      '耶鲁大学',
-      '哈佛大学',
-      '考陶尔德艺术研究院',
-      '斯莱德美术学院',
-    ]) {
+    for (const institution of AUTHORITATIVE_SOURCES.map(
+      ({ institution }) => institution,
+    )) {
       expect(coveredInstitutions.has(institution)).toBe(true);
     }
   });
