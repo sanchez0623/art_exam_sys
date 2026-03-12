@@ -30,7 +30,7 @@ export const AUTHORITATIVE_SOURCES: ReadonlyArray<AuthoritativeSource> = [
   },
 ] as const;
 
-function attachAuthoritativeSourceMetadata(
+export function attachAuthoritativeSourceMetadata(
   question: CreateQuestionDto,
 ): CreateQuestionDto {
   const matchedSource = AUTHORITATIVE_SOURCES.find(({ institution }) =>

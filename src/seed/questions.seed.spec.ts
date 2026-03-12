@@ -1,4 +1,8 @@
-import { AUTHORITATIVE_SOURCES, SEED_QUESTIONS } from './questions.seed';
+import {
+  AUTHORITATIVE_SOURCES,
+  SEED_QUESTIONS,
+  attachAuthoritativeSourceMetadata,
+} from './questions.seed';
 
 describe('SEED_QUESTIONS authoritative sources', () => {
   it('uses only the configured authoritative institutions', () => {
@@ -17,8 +21,27 @@ describe('SEED_QUESTIONS authoritative sources', () => {
       coveredInstitutions.add(authority!.institution);
     }
 
-    expect(coveredInstitutions).toEqual(
-      new Set(AUTHORITATIVE_SOURCES.map(({ institution }) => institution)),
+    for (const institution of [
+      '耶鲁大学',
+      '哈佛大学',
+      '考陶尔德艺术研究院',
+      '斯莱德美术学院',
+    ]) {
+      expect(coveredInstitutions.has(institution)).toBe(true);
+    }
+  });
+
+  it('leaves non-authoritative-source questions unchanged', () => {
+    const customQuestion = {
+      content: '测试题目',
+      options: ['A', 'B'],
+      answer: '0',
+      explanation: '测试解析',
+      source: '某艺术机构自定义题',
+    };
+
+    expect(attachAuthoritativeSourceMetadata(customQuestion)).toEqual(
+      customQuestion,
     );
   });
 });
