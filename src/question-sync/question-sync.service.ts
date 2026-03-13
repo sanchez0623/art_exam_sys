@@ -3,7 +3,10 @@ import { load } from 'cheerio';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { ArtPeriod, QuestionType } from '../questions/question.entity';
-import { CreateQuestionDto, QuestionsService } from '../questions/questions.service';
+import {
+  CreateQuestionDto,
+  QuestionsService,
+} from '../questions/questions.service';
 
 type SourceType = 'html' | 'json';
 
@@ -55,7 +58,9 @@ type JsonFieldMap = {
 
 type JsonSourceConfig = BaseSourceConfig & {
   type: 'json';
+  url?: string;
   listPath?: string;
+  items?: Record<string, unknown>[];
   fields: JsonFieldMap;
 };
 
@@ -98,6 +103,10 @@ export class QuestionSyncService {
   private readonly defaultConfigPath =
     process.env.EXAM_QUESTION_SOURCES_PATH ??
     join(process.cwd(), 'data', 'question-sync-sources.json');
+  private readonly fallbackConfigPath = join(
+    process.cwd(),
+    'question-sync-sources.example.json',
+  );
 
   constructor(private readonly questionsService: QuestionsService) {}
 
@@ -107,7 +116,7 @@ export class QuestionSyncService {
 
     if (sourceConfigs.length === 0) {
       const warning =
-        '未检测到题源配置，请创建 data/question-sync-sources.json 或设置 EXAM_QUESTION_SOURCES_JSON。';
+        '未检测到题源配置，请创建 data/question-sync-sources.json、保留仓库内 question-sync-sources.example.json，或设置 EXAM_QUESTION_SOURCES_JSON。';
       this.logger.warn(warning);
       return {
         requestedCount,
@@ -145,7 +154,9 @@ export class QuestionSyncService {
             continue;
           }
 
-          const contentHash = dto.contentHash ?? this.questionsService.buildContentHash(dto.content);
+          const contentHash =
+            dto.contentHash ??
+            this.questionsService.buildContentHash(dto.content);
           if (existingHashes.has(contentHash) || seenInRun.has(contentHash)) {
             sourceDuplicates += 1;
             duplicateCount += 1;
@@ -180,10 +191,14 @@ export class QuestionSyncService {
     }
 
     if (collected.length < requestedCount) {
-      warnings.push(`本次仅采集到 ${collected.length} 道可入库新题，低于目标 ${requestedCount} 道。`);
+      warnings.push(
+        `本次仅采集到 ${collected.length} 道可入库新题，低于目标 ${requestedCount} 道。`,
+      );
     }
 
-    const insertedCount = await this.questionsService.bulkUpsert(collected.slice(0, requestedCount));
+    const insertedCount = await this.questionsService.bulkUpsert(
+      collected.slice(0, requestedCount),
+    );
     return {
       requestedCount,
       fetchedCount: collected.length,
@@ -197,10 +212,20 @@ export class QuestionSyncService {
   private loadSourceConfigs(): QuestionSourceConfig[] {
     const jsonFromEnv = process.env.EXAM_QUESTION_SOURCES_JSON;
     if (jsonFromEnv) {
-      return this.parseSourceConfigJson(jsonFromEnv, 'EXAM_QUESTION_SOURCES_JSON');
+      return this.parseSourceConfigJson(
+        jsonFromEnv,
+        'EXAM_QUESTION_SOURCES_JSON',
+      );
     }
 
     if (!existsSync(this.defaultConfigPath)) {
+      if (existsSync(this.fallbackConfigPath)) {
+        const fallbackContent = readFileSync(this.fallbackConfigPath, 'utf8');
+        return this.parseSourceConfigJson(
+          fallbackContent,
+          this.fallbackConfigPath,
+        );
+      }
       return [];
     }
 
@@ -208,7 +233,10 @@ export class QuestionSyncService {
     return this.parseSourceConfigJson(fileContent, this.defaultConfigPath);
   }
 
-  private parseSourceConfigJson(content: string, sourceName: string): QuestionSourceConfig[] {
+  private parseSourceConfigJson(
+    content: string,
+    sourceName: string,
+  ): QuestionSourceConfig[] {
     try {
       const parsed = JSON.parse(content);
       if (!Array.isArray(parsed)) {
@@ -223,14 +251,42 @@ export class QuestionSyncService {
     }
   }
 
-  private async fetchSourceQuestions(source: QuestionSourceConfig): Promise<ExtractedQuestion[]> {
+  private async fetchSourceQuestions(
+    source: QuestionSourceConfig,
+  ): Promise<ExtractedQuestion[]> {
     if (source.type === 'json') {
       return this.fetchJsonSourceQuestions(source);
     }
     return this.fetchHtmlSourceQuestions(source);
   }
 
-  private async fetchJsonSourceQuestions(source: JsonSourceConfig): Promise<ExtractedQuestion[]> {
+  private async fetchJsonSourceQuestions(
+    source: JsonSourceConfig,
+  ): Promise<ExtractedQuestion[]> {
+    const jsonPayload = source.items
+      ? { items: source.items }
+      : await this.fetchJsonPayload(source);
+    const items = this.getValueByPath(jsonPayload, source.listPath) ?? jsonPayload;
+    if (!Array.isArray(items)) {
+      throw new Error('JSON 题源未返回数组数据');
+    }
+
+    return this.limitItems(
+      items.map((item) =>
+        this.mapJsonItemToQuestion(item as Record<string, unknown>, source),
+      ),
+      source.maxItems,
+      source.latestFirst,
+    ).filter((item): item is ExtractedQuestion => Boolean(item));
+  }
+
+  private async fetchJsonPayload(
+    source: JsonSourceConfig,
+  ): Promise<Record<string, unknown>> {
+    if (!source.url) {
+      throw new Error('JSON 题源缺少 url 或 items 配置');
+    }
+
     const response = await fetch(source.url, {
       headers: source.headers,
     });
@@ -239,17 +295,7 @@ export class QuestionSyncService {
       throw new Error(`HTTP ${response.status} ${response.statusText}`);
     }
 
-    const json = (await response.json()) as Record<string, unknown>;
-    const items = this.getValueByPath(json, source.listPath) ?? json;
-    if (!Array.isArray(items)) {
-      throw new Error('JSON 题源未返回数组数据');
-    }
-
-    return this.limitItems(
-      items.map((item) => this.mapJsonItemToQuestion(item as Record<string, unknown>, source)),
-      source.maxItems,
-      source.latestFirst,
-    ).filter((item): item is ExtractedQuestion => Boolean(item));
+    return (await response.json()) as Record<string, unknown>;
   }
 
   private mapJsonItemToQuestion(
@@ -265,25 +311,49 @@ export class QuestionSyncService {
           .filter(Boolean);
 
     return {
-      content: this.normalizeText(String(this.getValueByPath(item, source.fields.content) ?? '')),
+      content: this.normalizeText(
+        String(this.getValueByPath(item, source.fields.content) ?? ''),
+      ),
       options,
-      answer: (this.getValueByPath(item, source.fields.answer) ?? '') as string | number | Array<string | number>,
+      answer: (this.getValueByPath(item, source.fields.answer) ?? '') as
+        | string
+        | number
+        | Array<string | number>,
       explanation: this.normalizeText(
         String(this.getValueByPath(item, source.fields.explanation) ?? ''),
       ),
-      imageUrl: this.normalizeText(String(this.getValueByPath(item, source.fields.imageUrl) ?? '')) || undefined,
+      imageUrl:
+        this.normalizeText(
+          String(this.getValueByPath(item, source.fields.imageUrl) ?? ''),
+        ) || undefined,
       publishedAt:
-        this.normalizeText(String(this.getValueByPath(item, source.fields.publishedAt) ?? '')) || undefined,
-      period: this.normalizeText(String(this.getValueByPath(item, source.fields.period) ?? '')) || undefined,
+        this.normalizeText(
+          String(this.getValueByPath(item, source.fields.publishedAt) ?? ''),
+        ) || undefined,
+      period:
+        this.normalizeText(
+          String(this.getValueByPath(item, source.fields.period) ?? ''),
+        ) || undefined,
       difficulty:
-        (this.getValueByPath(item, source.fields.difficulty) as string | number | undefined) ?? undefined,
-      tags: (this.getValueByPath(item, source.fields.tags) as string | string[] | undefined) ?? undefined,
+        (this.getValueByPath(item, source.fields.difficulty) as
+          | string
+          | number
+          | undefined) ?? undefined,
+      tags:
+        (this.getValueByPath(item, source.fields.tags) as
+          | string
+          | string[]
+          | undefined) ?? undefined,
       sourceUrl:
-        this.normalizeText(String(this.getValueByPath(item, source.fields.sourceUrl) ?? '')) || source.url,
+        this.normalizeText(
+          String(this.getValueByPath(item, source.fields.sourceUrl) ?? ''),
+        ) || source.url,
     };
   }
 
-  private async fetchHtmlSourceQuestions(source: HtmlSourceConfig): Promise<ExtractedQuestion[]> {
+  private async fetchHtmlSourceQuestions(
+    source: HtmlSourceConfig,
+  ): Promise<ExtractedQuestion[]> {
     const response = await fetch(source.url, {
       headers: source.headers,
     });
@@ -303,7 +373,11 @@ export class QuestionSyncService {
         .map((href) => this.resolveUrl(source.url, href))
         .filter((href): href is string => Boolean(href));
 
-      const limitedLinks = this.limitItems(links, source.maxItems, source.latestFirst);
+      const limitedLinks = this.limitItems(
+        links,
+        source.maxItems,
+        source.latestFirst,
+      );
       const questions: ExtractedQuestion[] = [];
       for (const link of limitedLinks) {
         const detailResponse = await fetch(link, {
@@ -317,7 +391,12 @@ export class QuestionSyncService {
 
         const detailHtml = await detailResponse.text();
         const detail$ = load(detailHtml);
-        const extracted = this.extractHtmlQuestion(detail$, detail$.root(), source.fields, link);
+        const extracted = this.extractHtmlQuestion(
+          detail$,
+          detail$.root(),
+          source.fields,
+          link,
+        );
         if (extracted) {
           questions.push(extracted);
         }
@@ -325,10 +404,18 @@ export class QuestionSyncService {
       return questions;
     }
 
-    const itemRoots = source.itemSelector ? $(source.itemSelector).toArray() : [$.root().get(0)];
-    const limitedRoots = this.limitItems(itemRoots, source.maxItems, source.latestFirst);
+    const itemRoots = source.itemSelector
+      ? $(source.itemSelector).toArray()
+      : [$.root().get(0)];
+    const limitedRoots = this.limitItems(
+      itemRoots,
+      source.maxItems,
+      source.latestFirst,
+    );
     return limitedRoots
-      .map((root) => this.extractHtmlQuestion($, $(root), source.fields, source.url))
+      .map((root) =>
+        this.extractHtmlQuestion($, $(root), source.fields, source.url),
+      )
       .filter((item): item is ExtractedQuestion => Boolean(item));
   }
 
@@ -338,13 +425,17 @@ export class QuestionSyncService {
     fields: HtmlFieldSelectors,
     sourceUrl: string,
   ): ExtractedQuestion | null {
-    const content = this.normalizeText(root.find(fields.contentSelector).first().text());
+    const content = this.normalizeText(
+      root.find(fields.contentSelector).first().text(),
+    );
     const options = root
       .find(fields.optionsSelector)
       .map((_, element) => this.normalizeText($(element).text()))
       .get()
       .filter(Boolean);
-    const answer = this.normalizeText(root.find(fields.answerSelector).first().text());
+    const answer = this.normalizeText(
+      root.find(fields.answerSelector).first().text(),
+    );
 
     if (!content || options.length < 2 || !answer) {
       return null;
@@ -354,17 +445,47 @@ export class QuestionSyncService {
       content,
       options,
       answer,
-      explanation: this.normalizeText(root.find(fields.explanationSelector ?? '').first().text()) || undefined,
-      imageUrl:
-        fields.imageSelector
-          ? this.resolveUrl(sourceUrl, root.find(fields.imageSelector).first().attr('src'))
-          : undefined,
+      explanation:
+        this.normalizeText(
+          root
+            .find(fields.explanationSelector ?? '')
+            .first()
+            .text(),
+        ) || undefined,
+      imageUrl: fields.imageSelector
+        ? this.resolveUrl(
+            sourceUrl,
+            root.find(fields.imageSelector).first().attr('src'),
+          )
+        : undefined,
       publishedAt:
-        this.normalizeText(root.find(fields.publishedAtSelector ?? '').first().text()) || undefined,
-      period: this.normalizeText(root.find(fields.periodSelector ?? '').first().text()) || undefined,
+        this.normalizeText(
+          root
+            .find(fields.publishedAtSelector ?? '')
+            .first()
+            .text(),
+        ) || undefined,
+      period:
+        this.normalizeText(
+          root
+            .find(fields.periodSelector ?? '')
+            .first()
+            .text(),
+        ) || undefined,
       difficulty:
-        this.normalizeText(root.find(fields.difficultySelector ?? '').first().text()) || undefined,
-      tags: this.normalizeText(root.find(fields.tagsSelector ?? '').first().text()) || undefined,
+        this.normalizeText(
+          root
+            .find(fields.difficultySelector ?? '')
+            .first()
+            .text(),
+        ) || undefined,
+      tags:
+        this.normalizeText(
+          root
+            .find(fields.tagsSelector ?? '')
+            .first()
+            .text(),
+        ) || undefined,
       sourceUrl,
     };
   }
@@ -389,9 +510,14 @@ export class QuestionSyncService {
     }
 
     const explanation =
-      this.normalizeText(extractedQuestion.explanation ?? '') || '题目来自外部题源，建议结合原文进一步核对。';
-    const difficulty = this.resolveDifficulty(extractedQuestion.difficulty ?? source.difficulty);
-    const period = this.resolvePeriod(extractedQuestion.period ?? source.period);
+      this.normalizeText(extractedQuestion.explanation ?? '') ||
+      '题目来自外部题源，建议结合原文进一步核对。';
+    const difficulty = this.resolveDifficulty(
+      extractedQuestion.difficulty ?? source.difficulty,
+    );
+    const period = this.resolvePeriod(
+      extractedQuestion.period ?? source.period,
+    );
     const tags = this.resolveTags(extractedQuestion.tags ?? source.tags);
     const type = this.resolveQuestionType(answer, options);
 
@@ -432,7 +558,10 @@ export class QuestionSyncService {
     return [...new Set(indices)].sort((left, right) => left - right).join(',');
   }
 
-  private resolveSingleAnswerIndex(answerPart: string, options: string[]): number | null {
+  private resolveSingleAnswerIndex(
+    answerPart: string,
+    options: string[],
+  ): number | null {
     if (/^\d+$/.test(answerPart)) {
       const numeric = Number(answerPart);
       if (numeric >= 0 && numeric < options.length) {
@@ -453,7 +582,9 @@ export class QuestionSyncService {
 
     const normalizedAnswer = answerPart.replace(/^正确答案[:：]?/i, '').trim();
     const optionIndex = options.findIndex(
-      (option) => this.normalizeText(option).toLowerCase() === normalizedAnswer.toLowerCase(),
+      (option) =>
+        this.normalizeText(option).toLowerCase() ===
+        normalizedAnswer.toLowerCase(),
     );
     if (optionIndex >= 0) {
       return optionIndex;
@@ -487,7 +618,11 @@ export class QuestionSyncService {
 
     if (
       options.length === 2 &&
-      options.every((option) => ['true', 'false', '对', '错', '正确', '错误', '是', '否'].includes(this.normalizeText(option).toLowerCase()))
+      options.every((option) =>
+        ['true', 'false', '对', '错', '正确', '错误', '是', '否'].includes(
+          this.normalizeText(option).toLowerCase(),
+        ),
+      )
     ) {
       return QuestionType.TRUE_FALSE;
     }
@@ -499,21 +634,21 @@ export class QuestionSyncService {
     const normalized = this.normalizeText(String(value ?? '')).toLowerCase();
     const periodMap: Record<string, ArtPeriod> = {
       ancient: ArtPeriod.ANCIENT,
-      '古代': ArtPeriod.ANCIENT,
+      古代: ArtPeriod.ANCIENT,
       medieval: ArtPeriod.MEDIEVAL,
-      '中世纪': ArtPeriod.MEDIEVAL,
+      中世纪: ArtPeriod.MEDIEVAL,
       renaissance: ArtPeriod.RENAISSANCE,
-      '文艺复兴': ArtPeriod.RENAISSANCE,
+      文艺复兴: ArtPeriod.RENAISSANCE,
       baroque: ArtPeriod.BAROQUE,
       rococo: ArtPeriod.BAROQUE,
-      '巴洛克': ArtPeriod.BAROQUE,
-      '洛可可': ArtPeriod.BAROQUE,
+      巴洛克: ArtPeriod.BAROQUE,
+      洛可可: ArtPeriod.BAROQUE,
       modern: ArtPeriod.MODERN,
-      '现代': ArtPeriod.MODERN,
+      现代: ArtPeriod.MODERN,
       contemporary: ArtPeriod.CONTEMPORARY,
-      '当代': ArtPeriod.CONTEMPORARY,
+      当代: ArtPeriod.CONTEMPORARY,
       non_western: ArtPeriod.NON_WESTERN,
-      '非西方': ArtPeriod.NON_WESTERN,
+      非西方: ArtPeriod.NON_WESTERN,
     };
 
     return periodMap[normalized] ?? ArtPeriod.MODERN;
@@ -539,7 +674,9 @@ export class QuestionSyncService {
     return 1;
   }
 
-  private resolveTags(value: string | string[] | undefined): string | undefined {
+  private resolveTags(
+    value: string | string[] | undefined,
+  ): string | undefined {
     if (!value) {
       return undefined;
     }
@@ -563,13 +700,20 @@ export class QuestionSyncService {
     return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
   }
 
-  private getValueByPath(payload: Record<string, unknown>, path?: string): unknown {
+  private getValueByPath(
+    payload: Record<string, unknown>,
+    path?: string,
+  ): unknown {
     if (!path) {
       return undefined;
     }
 
     return path.split('.').reduce<unknown>((current, key) => {
-      if (current && typeof current === 'object' && key in (current as Record<string, unknown>)) {
+      if (
+        current &&
+        typeof current === 'object' &&
+        key in (current as Record<string, unknown>)
+      ) {
         return (current as Record<string, unknown>)[key];
       }
       return undefined;
@@ -580,7 +724,10 @@ export class QuestionSyncService {
     return value.replace(/\s+/g, ' ').trim();
   }
 
-  private resolveUrl(baseUrl: string, href?: string | null): string | undefined {
+  private resolveUrl(
+    baseUrl: string,
+    href?: string | null,
+  ): string | undefined {
     if (!href) {
       return undefined;
     }
@@ -592,7 +739,11 @@ export class QuestionSyncService {
     }
   }
 
-  private limitItems<T>(items: T[], maxItems?: number, latestFirst = true): T[] {
+  private limitItems<T>(
+    items: T[],
+    maxItems?: number,
+    latestFirst = true,
+  ): T[] {
     const normalizedItems = latestFirst ? items : [...items].reverse();
     if (!maxItems || maxItems <= 0) {
       return normalizedItems;
