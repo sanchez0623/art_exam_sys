@@ -1,6 +1,6 @@
 # Art History Learning System
 
-个人艺术史学习与管理系统。基于 **Next.js 15 App Router + TypeScript + Tailwind CSS + Supabase** 构建，可一键部署到 Vercel。
+个人艺术史学习与管理系统。基于 **Next.js 15 App Router + TypeScript + Tailwind CSS + Supabase** 构建。
 
 ---
 
@@ -150,7 +150,7 @@ notion_articles → notion_page_id, title, content, cover_url, tags[], synced_at
 5. **笔记 & 收藏** – Notes、Favorites
 6. **搜索** – 全局搜索页
 7. **Notion 同步** – `POST /api/notion-sync`，配置定时任务或手动触发
-8. **部署** – Vercel 部署，配置环境变量
+8. **部署** – 当前仓库仅保留根目录项目的 Netlify 部署；本子项目如需线上部署可后续补充
 
 ---
 
@@ -194,35 +194,9 @@ NOTION_SYNC_SECRET=your-random-secret
 
 ## 部署说明
 
-推荐部署到 Vercel。
+当前仓库**仅保留根目录项目的 Netlify 部署配置**，不再维护本子项目的其他部署方式。
 
-该项目使用了 Next.js App Router 的动态服务端能力，包括：
-
-- `middleware`
-- Server Actions
-- `app/api` Route Handlers
-- Supabase 服务端会话
-
-因此不适合部署到 GitHub Pages 这类纯静态托管平台。GitHub Actions 中保留的是构建校验，不再执行 GitHub Pages 发布。
-
-### Vercel 正确部署方式
-
-这是一个 monorepo。Vercel 必须部署 [art-history](art-history) 这个子项目，而不是仓库根目录。
-
-在 Vercel Dashboard 中请确认：
-
-- `Root Directory` = `art-history`
-- Framework Preset = `Next.js`
-
-如果构建日志里出现下面这类命令：
-
-```bash
-cd art-history && npm install
-```
-
-通常说明你仍在部署**仓库根目录**，而不是直接把 `art-history` 设为 Root Directory。
-
-正确情况下，Vercel 会直接在 `art-history` 目录执行安装和构建。
+该项目依然保留完整的本地开发与生产构建说明，可用于后续按需接入新的部署平台。
 
 ---
 
@@ -231,8 +205,6 @@ cd art-history && npm install
 触发同步（使用 NOTION_SYNC_SECRET 作为 Bearer token）：
 
 ```bash
-curl -X POST https://your-app.vercel.app/api/notion-sync \
+curl -X POST https://your-domain.example.com/api/notion-sync \
   -H "Authorization: Bearer YOUR_NOTION_SYNC_SECRET"
 ```
-
-也可以通过 Vercel Cron Jobs 定期触发。
