@@ -1,0 +1,155 @@
+[
+  {
+    "name": "仓库内置艺术史示例题源",
+    "type": "json",
+    "listPath": "items",
+    "sourceSite": "仓库内置题源",
+    "latestFirst": true,
+    "maxItems": 20,
+    "fields": {
+      "content": "content",
+      "options": "options",
+      "answer": "answer",
+      "explanation": "explanation",
+      "publishedAt": "publishedAt",
+      "period": "period",
+      "difficulty": "difficulty",
+      "tags": "tags",
+      "sourceUrl": "sourceUrl"
+    },
+    "items": [
+      {
+        "content": "印象派画家莫奈在《鲁昂大教堂》系列中最核心的研究重点是什么？",
+        "options": ["宗教叙事", "光线与时间变化", "古典比例", "透视法训练"],
+        "answer": "B",
+        "explanation": "该系列反复描绘同一立面，重点在于不同时段光线造成的色彩与氛围差异。",
+        "publishedAt": "2026-01-12T08:00:00.000Z",
+        "period": "modern",
+        "difficulty": 1,
+        "tags": ["印象派", "莫奈"],
+        "sourceUrl": "https://example.com/art-history/impressionism/monet-rouen"
+      },
+      {
+        "content": "下列哪位艺术家最常被视为意大利文艺复兴盛期“全才型艺术家”的代表？",
+        "options": ["乔托", "达·芬奇", "卡拉瓦乔", "库尔贝"],
+        "answer": "1",
+        "explanation": "达·芬奇兼具绘画、科学、工程等多重身份，是盛期文艺复兴“全才”形象的典型。",
+        "publishedAt": "2026-01-13T08:00:00.000Z",
+        "period": "renaissance",
+        "difficulty": 1,
+        "tags": ["文艺复兴", "达·芬奇"],
+        "sourceUrl": "https://example.com/art-history/renaissance/leonardo"
+      },
+      {
+        "content": "巴洛克艺术在视觉效果上通常追求哪一种体验？",
+        "options": ["克制与平面化", "戏剧性与运动感", "完全抽象化", "机械重复"],
+        "answer": "戏剧性与运动感",
+        "explanation": "巴洛克风格强调动态构图、戏剧化光线和强烈情感，以制造震撼性的观看经验。",
+        "publishedAt": "2026-01-14T08:00:00.000Z",
+        "period": "baroque",
+        "difficulty": 1,
+        "tags": ["巴洛克", "风格特征"],
+        "sourceUrl": "https://example.com/art-history/baroque/drama"
+      },
+      {
+        "content": "在中世纪哥特式教堂中，大面积彩色玻璃的使用主要强化了什么？",
+        "options": ["世俗肖像传统", "光的神学象征", "透视科学实验", "油画收藏功能"],
+        "answer": "B",
+        "explanation": "哥特式建筑把光视为神圣秩序的象征，彩色玻璃使内部空间具有超越性的光照体验。",
+        "publishedAt": "2026-01-15T08:00:00.000Z",
+        "period": "medieval",
+        "difficulty": 2,
+        "tags": ["中世纪", "哥特式"],
+        "sourceUrl": "https://example.com/art-history/medieval/gothic-light"
+      },
+      {
+        "content": "《格尔尼卡》之所以成为反战图像经典，最重要的原因是什么？",
+        "options": ["它恢复了古典神话题材", "它记录并控诉战争暴力", "它提出透视法公式", "它首次使用油画材料"],
+        "answer": "1",
+        "explanation": "毕加索通过扭曲的人物与动物形象，集中呈现战争对平民造成的灾难性伤害。",
+        "publishedAt": "2026-01-16T08:00:00.000Z",
+        "period": "modern",
+        "difficulty": 2,
+        "tags": ["毕加索", "战争题材"],
+        "sourceUrl": "https://example.com/art-history/modern/guernica"
+      },
+      {
+        "content": "下列哪一项最能概括极简主义艺术的核心倾向？",
+        "options": ["强调作者手工痕迹", "强调材料与结构的客观呈现", "强调叙事性历史场景", "强调宗教象征图像"],
+        "answer": "B",
+        "explanation": "极简主义倾向于减少主观表达，突出材料、尺度、重复与空间关系本身。",
+        "publishedAt": "2026-01-17T08:00:00.000Z",
+        "period": "contemporary",
+        "difficulty": 2,
+        "tags": ["极简主义", "当代艺术"],
+        "sourceUrl": "https://example.com/art-history/contemporary/minimalism"
+      },
+      {
+        "content": "古希腊古风时期雕像常见的“古风式微笑”通常说明什么？",
+        "options": ["人物正在叙述故事", "艺术家在探索生命感与理想化表情", "作品本用于戏剧演出", "人物必须表现悲剧情绪"],
+        "answer": "B",
+        "explanation": "古风式微笑并非自然写实，而是古风雕刻在生命感和理想人体表现上的程式化尝试。",
+        "publishedAt": "2026-01-18T08:00:00.000Z",
+        "period": "ancient",
+        "difficulty": 2,
+        "tags": ["古希腊", "雕塑"],
+        "sourceUrl": "https://example.com/art-history/ancient/archaic-smile"
+      },
+      {
+        "content": "日本浮世绘对19世纪欧洲艺术的重要影响，通常被称为什么现象？",
+        "options": ["学院主义", "日本趣味", "未来主义", "达达主义"],
+        "answer": "1",
+        "explanation": "Japonisme（日本趣味）概括了浮世绘等日本视觉文化对欧洲现代艺术的广泛影响。",
+        "publishedAt": "2026-01-19T08:00:00.000Z",
+        "period": "non_western",
+        "difficulty": 1,
+        "tags": ["浮世绘", "跨文化传播"],
+        "sourceUrl": "https://example.com/art-history/non-western/japonisme"
+      },
+      {
+        "content": "杜尚将现成品带入艺术史讨论，最直接挑战了哪一传统观念？",
+        "options": ["艺术必须依赖作者选择之外的天然生成", "艺术必须建立在手工制作与审美唯一性上", "艺术只能服务宗教礼拜", "艺术不能进入公共空间"],
+        "answer": "B",
+        "explanation": "现成品通过“选择即创作”挑战了艺术作品只能来自手工制作与独特审美对象的传统界定。",
+        "publishedAt": "2026-01-20T08:00:00.000Z",
+        "period": "modern",
+        "difficulty": 3,
+        "tags": ["杜尚", "观念艺术"],
+        "sourceUrl": "https://example.com/art-history/modern/duchamp-readymade"
+      },
+      {
+        "content": "文艺复兴时期系统化的线性透视法主要服务于哪种目标？",
+        "options": ["让空间在平面上显得合理统一", "让画面彻底失去深度", "让人物只以侧面出现", "让颜色完全取代素描"],
+        "answer": "A",
+        "explanation": "线性透视法通过消失点与正交线组织空间，使平面图像产生可计算的纵深幻觉。",
+        "publishedAt": "2026-01-21T08:00:00.000Z",
+        "period": "renaissance",
+        "difficulty": 1,
+        "tags": ["透视法", "文艺复兴"],
+        "sourceUrl": "https://example.com/art-history/renaissance/perspective"
+      },
+      {
+        "content": "后印象派与印象派相比，更常主动强调哪一方面？",
+        "options": ["纯粹复制瞬时视觉", "结构、象征或主观表达", "彻底拒绝色彩", "只描绘宫廷历史"],
+        "answer": "B",
+        "explanation": "塞尚、高更、梵高等人在印象派基础上，更重视结构秩序、象征意味与主观情感。",
+        "publishedAt": "2026-01-22T08:00:00.000Z",
+        "period": "modern",
+        "difficulty": 2,
+        "tags": ["后印象派", "现代艺术"],
+        "sourceUrl": "https://example.com/art-history/modern/post-impressionism"
+      },
+      {
+        "content": "装置艺术之所以常被视为“空间中的艺术”，主要因为它强调什么？",
+        "options": ["作品与观众、场所之间的整体关系", "只保留平面画布", "完全否认材料的存在", "只接受宗教图像"],
+        "answer": "0",
+        "explanation": "装置艺术通常把空间、观看路径与观众参与一并纳入作品结构，而非只关注单件物体。",
+        "publishedAt": "2026-01-23T08:00:00.000Z",
+        "period": "contemporary",
+        "difficulty": 2,
+        "tags": ["装置艺术", "空间"],
+        "sourceUrl": "https://example.com/art-history/contemporary/installation"
+      }
+    ]
+  }
+]

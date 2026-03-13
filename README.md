@@ -104,15 +104,16 @@ art_exam_sys/
 
 ### 🔄 外部题源配置
 
-每日同步能力默认会读取以下任一配置：
+每日同步能力默认会按以下顺序读取配置：
 
 1. 环境变量 `EXAM_QUESTION_SOURCES_JSON`
 2. 项目根目录下的 `data/question-sync-sources.json`
+3. 仓库自带的 `question-sync-sources.example.json`
 
-可直接参考 [data/question-sync-sources.example.json](data/question-sync-sources.example.json) 复制出正式配置。支持两类题源：
+仓库已内置一份可直接使用的示例题源配置，因此本地启动后点击“同步题库”即可完成一次同步。若需替换为你自己的正式题源，可复制 [question-sync-sources.example.json](question-sync-sources.example.json) 到 `data/question-sync-sources.json` 再修改。支持两类题源：
 
 - `html`：通过 CSS 选择器抓取网页题目
-- `json`：通过字段映射读取题目接口
+- `json`：通过字段映射读取题目接口，或直接在配置里提供 `items`
 
 系统会基于题干标准化后的 `SHA-256` 哈希去重，避免重复入库。
 
