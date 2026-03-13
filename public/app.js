@@ -16,6 +16,7 @@ const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 // ── State ──
 let currentSession = null;    // { id, questions, answers, currentIdx }
 let reviewMode = false;
+let toastTimer = null;
 
 // ─────────────────────────────────────────────
 // Navigation
@@ -100,6 +101,10 @@ async function startQuiz(options = {}) {
       questions: data.questions,
       answers: {}, // questionId -> { userAnswer, isCorrect, correctAnswer, explanation }
       currentIdx: 0,
+      options: {
+        period: options.period,
+        difficulty: options.difficulty,
+      },
     };
     setVisible('quiz-loading', false);
     setVisible('quiz-container', true);
@@ -172,10 +177,13 @@ function renderQuestion() {
 
   // Nav buttons
   const prevBtn = document.getElementById('btn-prev-q');
+  const loadMoreBtn = document.getElementById('btn-load-more-q');
   const nextBtn = document.getElementById('btn-next-q');
   const finishBtn = document.getElementById('btn-finish-quiz');
 
   prevBtn.style.display = currentIdx > 0 ? '' : 'none';
+  loadMoreBtn.style.display = reviewMode ? 'none' : '';
+  loadMoreBtn.onclick = () => handleLoadMoreQuestions();
   const isLast = currentIdx === total - 1;
   nextBtn.textContent = isLast ? '提交答卷 🏁' : '下一题 ▶';
   nextBtn.onclick = isLast ? () => handleFinish() : () => gotoQuestion(currentIdx + 1);
@@ -225,6 +233,36 @@ async function handleFinish() {
     await fetchJSON(`/api/quiz/${id}/complete`, { method: 'POST' });
   } catch (_) {}
   showResult();
+}
+
+async function handleLoadMoreQuestions() {
+  if (!currentSession || reviewMode) return;
+  const confirmed = window.confirm('确认继续拉取 10 道新题吗？');
+  if (!confirmed) return;
+
+  const loadMoreBtn = document.getElementById('btn-load-more-q');
+  const originalText = loadMoreBtn.textContent;
+  loadMoreBtn.disabled = true;
+  loadMoreBtn.textContent = '拉取中...';
+
+  try {
+    const res = await fetchJSON(`/api/quiz/${currentSession.id}/add-more`, {
+      method: 'POST',
+      body: JSON.stringify({
+        count: 10,
+        period: currentSession.options?.period,
+        difficulty: currentSession.options?.difficulty,
+      }),
+    });
+    currentSession.questions.push(...res.questions);
+    showToast(`已成功拉取 ${res.questions.length} 道新题`, 'success');
+    renderQuestion();
+  } catch (e) {
+    alert('拉取新题失败：' + (e.message || '未知错误'));
+  } finally {
+    loadMoreBtn.disabled = false;
+    loadMoreBtn.textContent = originalText;
+  }
 }
 
 function showResult() {
@@ -326,6 +364,7 @@ async function resumeSession(id) {
       questions: data.questions,
       answers: answersMap,
       currentIdx: 0,
+      options: {},
     };
     setVisible('quiz-loading', false);
 
@@ -407,6 +446,22 @@ async function fetchJSON(url, opts = {}) {
     throw new Error(msg || res.statusText);
   }
   return res.json();
+}
+
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+  container.replaceChildren(toast);
+
+  if (toastTimer) {
+    clearTimeout(toastTimer);
+  }
+  toastTimer = window.setTimeout(() => {
+    toast.remove();
+    toastTimer = null;
+  }, 3000);
 }
 
 function setVisible(id, visible) {

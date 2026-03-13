@@ -267,6 +267,46 @@ body {
   gap: .75rem;
   justify-content: flex-end;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+.toast-container {
+  position: fixed;
+  top: 5.5rem;
+  right: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  z-index: 400;
+  pointer-events: none;
+}
+
+.toast {
+  min-width: 220px;
+  max-width: 320px;
+  padding: .85rem 1rem;
+  border-radius: 10px;
+  background: rgba(31, 41, 55, .95);
+  color: var(--white);
+  box-shadow: var(--shadow-lg);
+  font-size: .9rem;
+  line-height: 1.5;
+  animation: toast-in .2s ease, toast-out .25s ease forwards;
+  animation-delay: 0s, 2.75s;
+}
+
+.toast-success {
+  background: rgba(16, 185, 129, .96);
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toast-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-8px); }
 }
 
 /* ─── Result ─── */
@@ -399,4 +439,14 @@ body {
   .question-text { font-size: 1rem; }
   .result-card { padding: 2rem 1.25rem; }
   .result-score { font-size: 2.5rem; }
+  .toast-container {
+    left: 1rem;
+    right: 1rem;
+    top: auto;
+    bottom: 1rem;
+  }
+  .toast {
+    min-width: 0;
+    max-width: none;
+  }
 }
