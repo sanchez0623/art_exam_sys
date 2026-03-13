@@ -21,14 +21,19 @@ let toastTimer = null;
 // ─────────────────────────────────────────────
 // Navigation
 // ─────────────────────────────────────────────
-document.querySelectorAll('.nav-btn').forEach(btn => {
+document.querySelectorAll('.nav-btn[data-page]').forEach(btn => {
   btn.addEventListener('click', () => {
     const page = btn.dataset.page;
     showPage(page);
-    btn.closest('nav').querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+    setActiveNavPage(page);
   });
 });
+
+function setActiveNavPage(page) {
+  document.querySelectorAll('.nav-btn[data-page]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.page === page);
+  });
+}
 
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -83,8 +88,7 @@ document.getElementById('btn-start-custom').addEventListener('click', async () =
 async function startQuiz(options = {}) {
   reviewMode = false;
   showPage('quiz');
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.querySelector('[data-page="quiz"]').classList.add('active');
+  setActiveNavPage('quiz');
 
   setVisible('quiz-loading', true);
   setVisible('quiz-container', false);
@@ -177,13 +181,10 @@ function renderQuestion() {
 
   // Nav buttons
   const prevBtn = document.getElementById('btn-prev-q');
-  const loadMoreBtn = document.getElementById('btn-load-more-q');
   const nextBtn = document.getElementById('btn-next-q');
   const finishBtn = document.getElementById('btn-finish-quiz');
 
   prevBtn.style.display = currentIdx > 0 ? '' : 'none';
-  loadMoreBtn.style.display = reviewMode ? 'none' : '';
-  loadMoreBtn.onclick = () => handleLoadMoreQuestions();
   const isLast = currentIdx === total - 1;
   nextBtn.textContent = isLast ? '提交答卷 🏁' : '下一题 ▶';
   nextBtn.onclick = isLast ? () => handleFinish() : () => gotoQuestion(currentIdx + 1);
@@ -233,36 +234,6 @@ async function handleFinish() {
     await fetchJSON(`/api/quiz/${id}/complete`, { method: 'POST' });
   } catch (_) {}
   showResult();
-}
-
-async function handleLoadMoreQuestions() {
-  if (!currentSession || reviewMode) return;
-  const confirmed = window.confirm('确认继续拉取 10 道新题吗？');
-  if (!confirmed) return;
-
-  const loadMoreBtn = document.getElementById('btn-load-more-q');
-  const originalText = loadMoreBtn.textContent;
-  loadMoreBtn.disabled = true;
-  loadMoreBtn.textContent = '拉取中...';
-
-  try {
-    const res = await fetchJSON(`/api/quiz/${currentSession.id}/add-more`, {
-      method: 'POST',
-      body: JSON.stringify({
-        count: 10,
-        period: currentSession.options?.period,
-        difficulty: currentSession.options?.difficulty,
-      }),
-    });
-    currentSession.questions.push(...res.questions);
-    showToast(`已成功拉取 ${res.questions.length} 道新题`, 'success');
-    renderQuestion();
-  } catch (e) {
-    alert('拉取新题失败：' + (e.message || '未知错误'));
-  } finally {
-    loadMoreBtn.disabled = false;
-    loadMoreBtn.textContent = originalText;
-  }
 }
 
 function showResult() {
@@ -339,8 +310,7 @@ async function loadHistory(page = 1) {
 
 async function resumeSession(id) {
   showPage('quiz');
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.querySelector('[data-page="quiz"]').classList.add('active');
+  setActiveNavPage('quiz');
   setVisible('quiz-loading', true);
   setVisible('quiz-container', false);
   setVisible('quiz-result', false);
@@ -381,6 +351,39 @@ async function resumeSession(id) {
 }
 
 document.getElementById('btn-refresh-history').addEventListener('click', () => loadHistory(historyPage));
+
+document.getElementById('btn-sync-questions').addEventListener('click', handleSyncQuestions);
+
+async function handleSyncQuestions() {
+  const syncBtn = document.getElementById('btn-sync-questions');
+  const originalText = syncBtn.textContent;
+  syncBtn.disabled = true;
+  syncBtn.textContent = '同步中...';
+
+  try {
+    const result = await fetchJSON('/api/questions/sync', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    const summary = [
+      `新增 ${result.insertedCount} 题`,
+      `去重 ${result.duplicateCount} 题`,
+    ];
+    if (result.warnings?.length) {
+      summary.push(result.warnings[0]);
+    }
+    showToast(`题库同步完成：${summary.join('，')}`, result.insertedCount > 0 ? 'success' : 'default');
+    await loadStats();
+    if (document.getElementById('page-questions').classList.contains('active')) {
+      await loadQuestions();
+    }
+  } catch (e) {
+    alert('同步题库失败：' + (e.message || '未知错误'));
+  } finally {
+    syncBtn.disabled = false;
+    syncBtn.textContent = originalText;
+  }
+}
 
 // ─────────────────────────────────────────────
 // Questions browser
