@@ -1,5 +1,9 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { createClient, type PostgrestError, type SupabaseClient } from '@supabase/supabase-js';
+import {
+  createClient,
+  type PostgrestError,
+  type SupabaseClient,
+} from '@supabase/supabase-js';
 
 @Injectable()
 export class SupabaseService {
@@ -23,7 +27,10 @@ export class SupabaseService {
     });
   }
 
-  throwIfError(error: PostgrestError | Error | null | undefined, tableName?: string): void {
+  throwIfError(
+    error: PostgrestError | Error | null | undefined,
+    tableName?: string,
+  ): void {
     if (!error) {
       return;
     }

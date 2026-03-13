@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { existsSync } from 'fs';
 import { join } from 'path';
-import { CreateQuestionDto, QuestionsService } from '../questions/questions.service';
+import {
+  CreateQuestionDto,
+  QuestionsService,
+} from '../questions/questions.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import { QuizStatus } from '../quiz/quiz-session.entity';
 
@@ -60,7 +63,10 @@ export class LocalDataImportService {
   ) {}
 
   async importFromSqlite() {
-    if (process.env.NETLIFY === 'true' || typeof process.env.AWS_LAMBDA_FUNCTION_NAME === 'string') {
+    if (
+      process.env.NETLIFY === 'true' ||
+      typeof process.env.AWS_LAMBDA_FUNCTION_NAME === 'string'
+    ) {
       this.logger.log('ℹ️ Serverless 环境下跳过本地 SQLite 导入');
       return { importedQuestions: 0, importedSessions: 0, importedAnswers: 0 };
     }
@@ -70,7 +76,9 @@ export class LocalDataImportService {
       return { importedQuestions: 0, importedSessions: 0, importedAnswers: 0 };
     }
 
-    const BetterSqlite3 = eval('require')('better-sqlite3') as typeof import('better-sqlite3');
+    const BetterSqlite3 = eval('require')(
+      'better-sqlite3',
+    ) as typeof import('better-sqlite3');
     const db = new BetterSqlite3(this.sqlitePath, { readonly: true });
 
     try {
@@ -80,10 +88,16 @@ export class LocalDataImportService {
       const tableNames = new Set(sqliteTables.map((table) => table.name));
 
       if (!tableNames.has('questions')) {
-        return { importedQuestions: 0, importedSessions: 0, importedAnswers: 0 };
+        return {
+          importedQuestions: 0,
+          importedSessions: 0,
+          importedAnswers: 0,
+        };
       }
 
-      const sqliteQuestions = db.prepare('SELECT * FROM questions ORDER BY id ASC').all() as SqliteQuestionRow[];
+      const sqliteQuestions = db
+        .prepare('SELECT * FROM questions ORDER BY id ASC')
+        .all() as SqliteQuestionRow[];
       const existingByContent = await this.questionsService.getContentIdMap();
 
       let importedQuestions = 0;
@@ -118,21 +132,32 @@ export class LocalDataImportService {
       let importedAnswers = 0;
 
       if (tableNames.has('quiz_sessions') && tableNames.has('quiz_answers')) {
-        const { count: existingSessionCount, error: existingSessionsError } = await this.supabaseService.client
-          .from(this.sessionTableName)
-          .select('*', { count: 'exact', head: true });
-        this.supabaseService.throwIfError(existingSessionsError, this.sessionTableName);
+        const { count: existingSessionCount, error: existingSessionsError } =
+          await this.supabaseService.client
+            .from(this.sessionTableName)
+            .select('*', { count: 'exact', head: true });
+        this.supabaseService.throwIfError(
+          existingSessionsError,
+          this.sessionTableName,
+        );
 
         if ((existingSessionCount ?? 0) === 0) {
-          const sqliteSessions = db.prepare('SELECT * FROM quiz_sessions ORDER BY id ASC').all() as SqliteSessionRow[];
-          const sqliteAnswers = db.prepare('SELECT * FROM quiz_answers ORDER BY id ASC').all() as SqliteAnswerRow[];
+          const sqliteSessions = db
+            .prepare('SELECT * FROM quiz_sessions ORDER BY id ASC')
+            .all() as SqliteSessionRow[];
+          const sqliteAnswers = db
+            .prepare('SELECT * FROM quiz_answers ORDER BY id ASC')
+            .all() as SqliteAnswerRow[];
           const sessionIdMap = new Map<number, number>();
 
           for (const row of sqliteSessions) {
             const questionIds = row.questionIds
               ? (JSON.parse(row.questionIds) as number[])
                   .map((questionId) => questionIdMap.get(questionId))
-                  .filter((questionId): questionId is number => typeof questionId === 'number')
+                  .filter(
+                    (questionId): questionId is number =>
+                      typeof questionId === 'number',
+                  )
               : [];
 
             const { data, error } = await this.supabaseService.client

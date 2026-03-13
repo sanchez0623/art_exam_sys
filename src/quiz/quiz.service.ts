@@ -58,7 +58,10 @@ export class QuizService {
 
   private async getQuestionAnswerSummary(questionIds: number[]) {
     if (questionIds.length === 0) {
-      return new Map<number, { answered: boolean; hasCorrect: boolean; hasWrong: boolean }>();
+      return new Map<
+        number,
+        { answered: boolean; hasCorrect: boolean; hasWrong: boolean }
+      >();
     }
 
     const { data, error } = await this.supabaseService.client
@@ -82,7 +85,7 @@ export class QuizService {
       };
 
       current.answered = true;
-      if (Boolean(row.is_correct)) {
+      if (row.is_correct) {
         current.hasCorrect = true;
       } else {
         current.hasWrong = true;
@@ -111,8 +114,8 @@ export class QuizService {
       (question) => !answerSummary.get(question.id)?.answered,
     );
 
-    const masteredQuestions = allQuestions.filter(
-      (question) => Boolean(answerSummary.get(question.id)?.hasCorrect),
+    const masteredQuestions = allQuestions.filter((question) =>
+      Boolean(answerSummary.get(question.id)?.hasCorrect),
     );
 
     return {
@@ -130,10 +133,11 @@ export class QuizService {
     isScheduled?: boolean;
   }): Promise<QuizSession> {
     const count = options?.count ?? 10;
-    const { retryQuestions, freshQuestions } = await this.getPracticeQuestionPools({
-      period: options?.period,
-      difficulty: options?.difficulty,
-    });
+    const { retryQuestions, freshQuestions } =
+      await this.getPracticeQuestionPools({
+        period: options?.period,
+        difficulty: options?.difficulty,
+      });
 
     const questions = [
       ...this.shuffle(retryQuestions),
@@ -163,11 +167,12 @@ export class QuizService {
 
   /** Get session with questions (for the frontend) */
   async getSessionWithQuestions(sessionId: number) {
-    const { data: sessionRow, error: sessionError } = await this.supabaseService.client
-      .from(this.sessionTableName)
-      .select('*')
-      .eq('id', sessionId)
-      .maybeSingle();
+    const { data: sessionRow, error: sessionError } =
+      await this.supabaseService.client
+        .from(this.sessionTableName)
+        .select('*')
+        .eq('id', sessionId)
+        .maybeSingle();
 
     this.supabaseService.throwIfError(sessionError, this.sessionTableName);
     const session = sessionRow ? this.mapSession(sessionRow) : null;
@@ -179,10 +184,11 @@ export class QuizService {
     );
 
     // Get already-answered question ids
-    const { data: answerRows, error: answersError } = await this.supabaseService.client
-      .from(this.answerTableName)
-      .select('question_id, user_answer, is_correct')
-      .eq('session_id', sessionId);
+    const { data: answerRows, error: answersError } =
+      await this.supabaseService.client
+        .from(this.answerTableName)
+        .select('question_id, user_answer, is_correct')
+        .eq('session_id', sessionId);
 
     this.supabaseService.throwIfError(answersError, this.answerTableName);
     const answered = (answerRows ?? []).map((row) => ({
@@ -229,11 +235,12 @@ export class QuizService {
     correctAnswer: string;
     explanation: string;
   }> {
-    const { data: sessionRow, error: sessionError } = await this.supabaseService.client
-      .from(this.sessionTableName)
-      .select('*')
-      .eq('id', sessionId)
-      .maybeSingle();
+    const { data: sessionRow, error: sessionError } =
+      await this.supabaseService.client
+        .from(this.sessionTableName)
+        .select('*')
+        .eq('id', sessionId)
+        .maybeSingle();
 
     this.supabaseService.throwIfError(sessionError, this.sessionTableName);
     const session = sessionRow ? this.mapSession(sessionRow) : null;
@@ -246,12 +253,13 @@ export class QuizService {
     if (!question) throw new NotFoundException('题目不存在');
 
     // Check duplicate answer
-    const { data: existing, error: existingError } = await this.supabaseService.client
-      .from(this.answerTableName)
-      .select('id')
-      .eq('session_id', sessionId)
-      .eq('question_id', questionId)
-      .maybeSingle();
+    const { data: existing, error: existingError } =
+      await this.supabaseService.client
+        .from(this.answerTableName)
+        .select('id')
+        .eq('session_id', sessionId)
+        .eq('question_id', questionId)
+        .maybeSingle();
 
     this.supabaseService.throwIfError(existingError, this.answerTableName);
     if (existing) throw new BadRequestException('该题已作答');
@@ -274,7 +282,8 @@ export class QuizService {
     // Update session counters
     const answeredCount = session.answeredCount + 1;
     const correctCount = session.correctCount + (isCorrect ? 1 : 0);
-    const completedAt = answeredCount >= session.totalQuestions ? new Date() : null;
+    const completedAt =
+      answeredCount >= session.totalQuestions ? new Date() : null;
 
     const { error: updateSessionError } = await this.supabaseService.client
       .from(this.sessionTableName)
@@ -289,7 +298,10 @@ export class QuizService {
       })
       .eq('id', sessionId);
 
-    this.supabaseService.throwIfError(updateSessionError, this.sessionTableName);
+    this.supabaseService.throwIfError(
+      updateSessionError,
+      this.sessionTableName,
+    );
 
     return {
       isCorrect,
@@ -300,11 +312,12 @@ export class QuizService {
 
   /** Complete a session early */
   async completeSession(sessionId: number): Promise<QuizSession> {
-    const { data: sessionRow, error: sessionError } = await this.supabaseService.client
-      .from(this.sessionTableName)
-      .select('*')
-      .eq('id', sessionId)
-      .maybeSingle();
+    const { data: sessionRow, error: sessionError } =
+      await this.supabaseService.client
+        .from(this.sessionTableName)
+        .select('*')
+        .eq('id', sessionId)
+        .maybeSingle();
 
     this.supabaseService.throwIfError(sessionError, this.sessionTableName);
     const session = sessionRow ? this.mapSession(sessionRow) : null;
@@ -365,18 +378,26 @@ export class QuizService {
       this.getPracticeQuestionPools(),
     ]);
 
-    this.supabaseService.throwIfError(totalSessionsError, this.sessionTableName);
-    this.supabaseService.throwIfError(completedSessionsError, this.sessionTableName);
+    this.supabaseService.throwIfError(
+      totalSessionsError,
+      this.sessionTableName,
+    );
+    this.supabaseService.throwIfError(
+      completedSessionsError,
+      this.sessionTableName,
+    );
     this.supabaseService.throwIfError(answersError, this.answerTableName);
 
-    const mappedAnswers = (allAnswers ?? []).map((row) => this.mapAnswer({
-      id: 0,
-      session_id: 0,
-      question_id: 0,
-      user_answer: null,
-      is_correct: row.is_correct,
-      answered_at: new Date().toISOString(),
-    }));
+    const mappedAnswers = (allAnswers ?? []).map((row) =>
+      this.mapAnswer({
+        id: 0,
+        session_id: 0,
+        question_id: 0,
+        user_answer: null,
+        is_correct: row.is_correct,
+        answered_at: new Date().toISOString(),
+      }),
+    );
     const totalAnswered = mappedAnswers.length;
     const totalCorrect = mappedAnswers.filter((a) => a.isCorrect).length;
     const accuracy =
@@ -389,7 +410,8 @@ export class QuizService {
       totalCorrect,
       accuracy,
       availableQuestions:
-        practicePools.retryQuestions.length + practicePools.freshQuestions.length,
+        practicePools.retryQuestions.length +
+        practicePools.freshQuestions.length,
       retryQuestions: practicePools.retryQuestions.length,
       newQuestions: practicePools.freshQuestions.length,
       masteredQuestions: practicePools.masteredQuestions.length,
