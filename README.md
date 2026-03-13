@@ -5,7 +5,7 @@
 | 子项目 | 目录 | 说明 |
 |--------|------|------|
 | **艺术史自测系统** | 根目录 | NestJS 后端 + 原生前端，本地 SQLite，零配置运行 |
-| **艺术史学习管理系统** | `art-history/` | Next.js 15 + Supabase，可一键部署到 Vercel |
+| **艺术史学习管理系统** | `art-history/` | Next.js 15 + Supabase，当前提供本地开发说明 |
 
 ---
 
@@ -72,7 +72,7 @@ art_exam_sys/
 │   ├── style.css
 │   └── app.js
 ├── data/                  # SQLite 数据库（运行时生成，已 gitignore）
-├── art-history/           # Next.js 学习管理子项目（独立部署）
+├── art-history/           # Next.js 学习管理子项目
 └── package.json
 ```
 
@@ -127,7 +127,7 @@ art_exam_sys/
 
 ## 📘 艺术史学习管理系统（`art-history/`）
 
-个人艺术史学习与管理系统，基于 **Next.js 15 App Router + TypeScript + Tailwind CSS + Supabase** 构建，可一键部署到 Vercel。
+个人艺术史学习与管理系统，基于 **Next.js 15 App Router + TypeScript + Tailwind CSS + Supabase** 构建。
 
 ### ✨ 功能模块
 
@@ -184,11 +184,19 @@ NOTION_SYNC_SECRET=your-random-secret
 - **样式**：Tailwind CSS
 - **认证**：Supabase Auth（@supabase/ssr）
 - **存储**：Supabase Storage
-- **部署**：Vercel
+- **部署**：当前仓库仅维护根目录项目的 Netlify 部署配置
 
 详细文档请参阅 [art-history/README.md](art-history/README.md)。
 
-> 部署到 Vercel 时，请将项目根目录指向 [art-history](art-history)。不要部署仓库根目录下的 NestJS 服务。
+### ☁️ 部署说明
+
+当前仓库**仅保留 Netlify 部署方式**，对应的是根目录下的「艺术史自测系统」：
+
+- Netlify 配置文件：[`netlify.toml`](netlify.toml)
+- Serverless 入口：[`netlify/functions/api.js`](netlify/functions/api.js)
+- 构建命令：`npm run build`
+
+`art-history/` 子项目当前只保留本地开发与构建说明；如后续需要其他部署方式，再单独补充。
 
 ---
 
