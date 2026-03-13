@@ -52,19 +52,6 @@ export class QuizController {
     return this.svc.submitAnswer(sessionId, body.questionId, body.answer);
   }
 
-  @Post(':id/add-more')
-  async addMoreQuestions(
-    @Param('id', ParseIntPipe) sessionId: number,
-    @Body()
-    body?: {
-      count?: number;
-      period?: ArtPeriod;
-      difficulty?: number;
-    },
-  ) {
-    return this.svc.addMoreQuestions(sessionId, body);
-  }
-
   @Post(':id/complete')
   async complete(@Param('id', ParseIntPipe) id: number) {
     return this.svc.completeSession(id);
