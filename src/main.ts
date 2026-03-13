@@ -6,12 +6,7 @@ loadEnv({ path: '.env.local', quiet: true });
 loadEnv({ quiet: true });
 
 function isAddressInUseError(error: unknown): error is NodeJS.ErrnoException {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    error.code === 'EADDRINUSE'
-  );
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'EADDRINUSE';
 }
 
 async function bootstrap() {

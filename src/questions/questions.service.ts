@@ -44,9 +44,7 @@ export class QuestionsService {
       sourcePublishedAt: row.source_published_at
         ? new Date(String(row.source_published_at))
         : null,
-      contentHash: String(
-        row.content_hash ?? this.buildContentHash(String(row.content)),
-      ),
+      contentHash: String(row.content_hash ?? this.buildContentHash(String(row.content))),
       difficulty: Number(row.difficulty ?? 1),
       tags: row.tags ? String(row.tags) : null,
       createdAt: new Date(String(row.created_at)),
@@ -176,19 +174,16 @@ export class QuestionsService {
       contentHash: dto.contentHash ?? this.buildContentHash(dto.content),
     }));
     const uniqueQuestions = Array.from(
-      new Map(
-        normalizedQuestions.map((dto) => [dto.contentHash, dto]),
-      ).values(),
+      new Map(normalizedQuestions.map((dto) => [dto.contentHash!, dto])).values(),
     );
 
-    const { data: existingRows, error: existingError } =
-      await this.supabaseService.client
-        .from(this.tableName)
-        .select('content_hash')
-        .in(
-          'content_hash',
-          uniqueQuestions.map((dto) => dto.contentHash),
-        );
+    const { data: existingRows, error: existingError } = await this.supabaseService.client
+      .from(this.tableName)
+      .select('content_hash')
+      .in(
+        'content_hash',
+        uniqueQuestions.map((dto) => dto.contentHash!),
+      );
 
     this.supabaseService.throwIfError(existingError, this.tableName);
 
@@ -196,7 +191,7 @@ export class QuestionsService {
       (existingRows ?? []).map((row) => String(row.content_hash)),
     );
     const payloads = uniqueQuestions
-      .filter((dto) => !existingHashes.has(dto.contentHash))
+      .filter((dto) => !existingHashes.has(dto.contentHash!))
       .map((dto) => this.toInsertPayload(dto));
 
     if (payloads.length === 0) {
