@@ -125,6 +125,7 @@
 
         <div class="quiz-nav">
           <button class="btn btn-ghost" id="btn-prev-q">◀ 上一题</button>
+          <button class="btn btn-secondary" id="btn-load-more-q">➕ 再拉 10 题</button>
           <button class="btn btn-primary" id="btn-next-q">下一题 ▶</button>
           <button class="btn btn-danger hidden" id="btn-finish-quiz">🏁 结束考试</button>
         </div>
@@ -192,6 +193,8 @@
       <p>⏰ 每日早上 8:00 自动同步最新 10 道题；做对后不再重复，错题会继续进入练习池</p>
     </div>
   </footer>
+
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
   <script src="/app.js"></script>
 </body>
